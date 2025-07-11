@@ -29,19 +29,21 @@ target_link_libraries(aim_trainer ${LUA_LIBRARIES})
 
 target_link_libraries(aim_trainer raylib)
 
+# TODO: eventually should just include the shaders as C strings
 add_custom_target(run
-    COMMAND aim_trainer
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_SOURCE_DIR}/src/lighting.vert
+            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/lighting.vert
+            &&
+            ${CMAKE_COMMAND} -E copy
+            ${CMAKE_SOURCE_DIR}/src/lighting.frag
+            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/lighting.frag
+            &&
+            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/aim_trainer
     DEPENDS aim_trainer
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
     COMMENT "Running the application..."
 )
 
 set(SCRIPT_DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-
-add_custom_command(
-    TARGET aim_trainer POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${CMAKE_SOURCE_DIR}/src/script.lua
-            ${SCRIPT_DESTINATION}/script.lua
-)
 

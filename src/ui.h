@@ -9,29 +9,9 @@
 #include "clay/clay.h"
 #include "clay/clay_renderer_raylib.c"
 
+#include "ui_utils.h"
 #include "lua_interface.h"
 #include "lato.h"
-
-const uint32_t FONT_ID_BODY_24 = 0;
-const uint32_t FONT_ID_BODY_16 = 1;
-#define COLOR_BLACK (Clay_Color) {0, 0, 0, 255}
-#define COLOR_GRAY (Clay_Color) {30, 30, 30, 255}
-#define COLOR_LIGHT_GRAY (Clay_Color) {50, 50, 50, 255}
-#define COLOR_DARK_BLUE (Clay_Color) {50, 50, 80, 255}
-#define COLOR_WHITE (Clay_Color) {255, 255, 255, 255}
-#define COLOR_ORANGE (Clay_Color) {225, 138, 50, 255}
-#define COLOR_BLUE (Clay_Color) {111, 173, 162, 255}
-
-#define RAYLIB_VECTOR2_TO_CLAY_VECTOR2(vector) (Clay_Vector2) { .x = vector.x, .y = vector.y }
-
-#define CLAY_DYNSTR(s) ((Clay_String) { .chars = s, .length = strlen(s) })
-
-Clay_TextElementConfig headerTextConfig = {
-    .fontId = 1,
-    .letterSpacing = 1,
-    .fontSize = 16,
-    .textColor = COLOR_WHITE
-};
 
 int selectedScenarioIndex = -1;
 void handleSelectScenario(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
@@ -40,7 +20,10 @@ void handleSelectScenario(Clay_ElementId elementId, Clay_PointerData pointerInfo
     }
 }
 
-void RenderScenarioCard(int index, Clay_String path) {
+cvector_vector_type(ScenarioMetadata) fileMetadata = NULL;
+
+char *timeBuffer = NULL;
+void RenderScenarioCard(int index) {
     CLAY({
         .id = CLAY_IDI("ScenarioCard", index),
         .layout = {
@@ -49,24 +32,28 @@ void RenderScenarioCard(int index, Clay_String path) {
             },
             .padding = { 5, 5, 5, 5 },
         },
-        .backgroundColor = Clay_Hovered()
-            ? COLOR_DARK_BLUE
-            : COLOR_LIGHT_GRAY,
+        .backgroundColor = (index == selectedScenarioIndex)
+            ? COLOR_DARK_GREEN
+            : (Clay_Hovered()
+                ? COLOR_DARK_BLUE
+                : COLOR_LIGHT_GRAY),
     }) {
+        ScenarioMetadata metadata = fileMetadata[index];
         Clay_OnHover(handleSelectScenario, index);
-        CLAY_TEXT(path, CLAY_TEXT_CONFIG(headerTextConfig));
+        CLAY_TEXT(CLAY_DYNSTR(metadata.name), CLAY_TEXT_CONFIG(boldTextConfig));
+        hSpacer();
+        CLAY_TEXT(CLAY_DYNSTR(metadata.author), CLAY_TEXT_CONFIG(normalTextConfig));
+        hSpacer();
+
+        const char *timeFormat = "%.1fs";
+        size_t needed = snprintf(NULL, 0, timeFormat, metadata.time) + 1;
+        timeBuffer = realloc(timeBuffer, needed);
+        sprintf(timeBuffer, timeFormat, metadata.time);
+
+        CLAY_TEXT(CLAY_DYNSTR(timeBuffer), CLAY_TEXT_CONFIG(normalTextConfig));
     }
 }
 
-struct ScenarioMetadata {
-    char *path;
-    char *name;
-    char *author;
-    char *description;
-};
-typedef struct ScenarioMetadata ScenarioMetadata;
-
-cvector_vector_type(ScenarioMetadata) fileMetadata = NULL;
 
 void findScenarios() {
     selectedScenarioIndex = -1;
@@ -125,6 +112,7 @@ void findScenarios() {
         toml_datum_t name = toml_seek(tomlParseResult.toptab, "name");
         toml_datum_t author = toml_seek(tomlParseResult.toptab, "author");
         toml_datum_t description = toml_seek(tomlParseResult.toptab, "description");
+        toml_datum_t time = toml_seek(tomlParseResult.toptab, "time");
 
         // TODO: improve error handling
         if (name.type != TOML_STRING) {
@@ -148,11 +136,19 @@ void findScenarios() {
             goto cleanup;
         }
 
+        if (time.type != TOML_FP64) {
+            fprintf(stderr, "Invalid key `time`!");
+            fail = true;
+            toml_free(tomlParseResult);
+            goto cleanup;
+        }
+
         ScenarioMetadata metadata = {
             .path = luaFilePath,
             .name = name.u.s,
             .author = author.u.s,
             .description = description.u.s,
+            .time = time.u.fp64
         };
 
         cvector_push_back(fileMetadata, metadata);
@@ -178,7 +174,7 @@ void handleReloadScenarios(Clay_ElementId elementId, Clay_PointerData pointerInf
 
 void handleStartScenario(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
-        loadLuaScenario(fileMetadata[selectedScenarioIndex].path);
+        loadLuaScenario(fileMetadata[selectedScenarioIndex]);
     }
 }
 
@@ -210,11 +206,7 @@ Clay_RenderCommandArray createScenarioSelectScreen(void) {
             .backgroundColor = COLOR_GRAY,
         }) {
             for (size_t i = 0; i < cvector_size(fileMetadata); i++) {
-                Clay_String path = {
-                    .chars = fileMetadata[i].name,
-                    .length = strlen(fileMetadata[i].name),
-                };
-                RenderScenarioCard(i, path);
+                RenderScenarioCard(i);
             }
             CLAY({
                 .id = CLAY_ID("LeftSpacer"),
@@ -235,7 +227,7 @@ Clay_RenderCommandArray createScenarioSelectScreen(void) {
                 },
             }) {
                 Clay_OnHover(handleReloadScenarios, 0);
-                CLAY_TEXT(CLAY_STRING("Reload"), &headerTextConfig);
+                CLAY_TEXT(CLAY_STRING("Reload"), &normalTextConfig);
             }
         }
 
@@ -253,29 +245,28 @@ Clay_RenderCommandArray createScenarioSelectScreen(void) {
             .backgroundColor = COLOR_GRAY
         }) {
             if (selectedScenarioIndex == -1) {
-                CLAY_TEXT(CLAY_STRING("No scenario selected"), CLAY_TEXT_CONFIG(headerTextConfig));
+                CLAY_TEXT(CLAY_STRING("No scenario selected"), CLAY_TEXT_CONFIG(normalTextConfig));
             } else {
                 ScenarioMetadata s = fileMetadata[selectedScenarioIndex];
-                // TODO: populate
                 CLAY_TEXT(
                     CLAY_DYNSTR(s.name),
-                    CLAY_TEXT_CONFIG(headerTextConfig)
+                    CLAY_TEXT_CONFIG(largeTextConfig)
                 );
                 CLAY({
                     .layout = {
                         .layoutDirection = CLAY_TOP_TO_BOTTOM,
                     },
                 }) {
-                CLAY_TEXT(CLAY_STRING("Author: "), CLAY_TEXT_CONFIG(headerTextConfig));
-                CLAY_TEXT(CLAY_DYNSTR(s.author), CLAY_TEXT_CONFIG(headerTextConfig));
+                CLAY_TEXT(CLAY_STRING("Author: "), CLAY_TEXT_CONFIG(boldTextConfig));
+                CLAY_TEXT(CLAY_DYNSTR(s.author), CLAY_TEXT_CONFIG(normalTextConfig));
                 }
                 CLAY({
                     .layout = {
                         .layoutDirection = CLAY_TOP_TO_BOTTOM,
                     },
                 }) {
-                CLAY_TEXT(CLAY_STRING("Description: "), CLAY_TEXT_CONFIG(headerTextConfig));
-                CLAY_TEXT(CLAY_DYNSTR(s.description), CLAY_TEXT_CONFIG(headerTextConfig));
+                CLAY_TEXT(CLAY_STRING("Description: "), CLAY_TEXT_CONFIG(boldTextConfig));
+                CLAY_TEXT(CLAY_DYNSTR(s.description), CLAY_TEXT_CONFIG(normalTextConfig));
                 }
                 CLAY({
                     .id = CLAY_ID("RightSpacer"),
@@ -295,7 +286,7 @@ Clay_RenderCommandArray createScenarioSelectScreen(void) {
                     },
                 }) {
                     Clay_OnHover(handleStartScenario, 0);
-                    CLAY_TEXT(CLAY_STRING("Start Scenario"), &headerTextConfig);
+                    CLAY_TEXT(CLAY_STRING("Start Scenario"), &normalTextConfig);
                 }
             }
         }
@@ -328,7 +319,12 @@ void UpdateDrawFrame(Font* fonts)
 
     Clay_Vector2 mousePosition = RAYLIB_VECTOR2_TO_CLAY_VECTOR2(GetMousePosition());
     Clay_SetPointerState(mousePosition, IsMouseButtonDown(0) && !scrollbarData.mouseDown);
-    Clay_SetLayoutDimensions((Clay_Dimensions) { (float)GetScreenWidth(), (float)GetScreenHeight() });
+    Clay_SetLayoutDimensions(
+        (Clay_Dimensions) {
+            (float) GetScreenWidth(),
+            (float) GetScreenHeight()
+        }
+    );
     if (!IsMouseButtonDown(0)) {
         scrollbarData.mouseDown = false;
     }
@@ -340,7 +336,6 @@ void UpdateDrawFrame(Font* fonts)
     ClearBackground(BLACK);
     Clay_Raylib_Render(renderCommands, fonts);
     EndDrawing();
-
 }
 
 bool reinitializeClay = false;
@@ -358,16 +353,31 @@ void HandleClayErrors(Clay_ErrorData errorData) {
 
 int spawnUi(void) {
     uint64_t totalMemorySize = Clay_MinMemorySize();
-    Clay_Arena clayMemory = Clay_CreateArenaWithCapacityAndMemory(totalMemorySize, malloc(totalMemorySize));
-    Clay_Initialize(clayMemory, (Clay_Dimensions) { (float)GetScreenWidth(), (float)GetScreenHeight() }, (Clay_ErrorHandler) { HandleClayErrors, 0 });
-    Clay_Raylib_Initialize(GetScreenWidth(), GetScreenHeight(), "Clay - Raylib Renderer Example", FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
+    Clay_Arena clayMemory = Clay_CreateArenaWithCapacityAndMemory(
+        totalMemorySize,
+        malloc(totalMemorySize)
+    );
+    Clay_Initialize(
+        clayMemory,
+        (Clay_Dimensions) {
+            (float)GetScreenWidth(),
+            (float)GetScreenHeight()
+        },
+        (Clay_ErrorHandler) {
+            HandleClayErrors,
+            0
+        }
+    );
+    const int screenWidth = 1280;
+    const int screenHeight = 720;
+    Clay_Raylib_Initialize(
+        screenWidth,
+        screenHeight,
+        "Aim Trainer",
+        FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT
+    );
 
-    Font fonts[2];
-    fonts[FONT_ID_BODY_24] = LoadFontFromMemory(".ttf", LatoRegularTTF, sizeof(LatoRegularTTF), 24, NULL, 0);
-	SetTextureFilter(fonts[FONT_ID_BODY_24].texture, TEXTURE_FILTER_BILINEAR);
-    fonts[FONT_ID_BODY_16] = LoadFontFromMemory(".ttf", LatoRegularTTF, sizeof(LatoRegularTTF), 16, NULL, 0);
-    SetTextureFilter(fonts[FONT_ID_BODY_16].texture, TEXTURE_FILTER_BILINEAR);
-    Clay_SetMeasureTextFunction(Raylib_MeasureText, fonts);
+    initFonts();
 
     findScenarios();
 
@@ -377,13 +387,23 @@ int spawnUi(void) {
             Clay_SetMaxElementCount(8192);
             totalMemorySize = Clay_MinMemorySize();
             clayMemory = Clay_CreateArenaWithCapacityAndMemory(totalMemorySize, malloc(totalMemorySize));
-            Clay_Initialize(clayMemory, (Clay_Dimensions) { (float)GetScreenWidth(), (float)GetScreenHeight() }, (Clay_ErrorHandler) { HandleClayErrors, 0 });
+            Clay_Initialize(
+                clayMemory,
+                (Clay_Dimensions) {
+                    (float)GetScreenWidth(),
+                    (float)GetScreenHeight()
+                },
+                (Clay_ErrorHandler) {
+                    HandleClayErrors,
+                    0
+                }
+            );
             reinitializeClay = false;
         }
         UpdateDrawFrame(fonts);
     }
 
-    // Clay_Raylib_Close();
+    Clay_Raylib_Close();
     return 0;
 }
 
