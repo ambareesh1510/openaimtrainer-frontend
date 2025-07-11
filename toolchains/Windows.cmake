@@ -1,1 +1,2 @@
-target_link_libraries(aim_trainer PRIVATE winmm.lib)
+set(PRIVATE_PLATFORM_SPECIFIC_LIBRARIES "winmm.lib")
+set(PUBLIC_PLATFORM_SPECIFIC_LIBRARIES "")
