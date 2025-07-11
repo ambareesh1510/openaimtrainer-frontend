@@ -1,11 +1,10 @@
 config = {
-    move = true;
+    move = false;
     piercing = false;
     initialPosition = { 0., 2., 8. };
     initialTarget = { 0., 2., 0. };
 }
 
-local ticks = 0
 local square_side = 3 
 local num_spheres = 3
 local occupied = {}
