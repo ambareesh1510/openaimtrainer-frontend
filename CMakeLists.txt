@@ -32,7 +32,6 @@ list(REMOVE_ITEM EXTERNS
 link_libraries(m)
 
 # add_compile_definitions(_GLFW_WAYLAND)
-add_compile_definitions(_GLFW_X11)
 add_compile_definitions(PLATFORM_DESKTOP_GLFW)
 add_executable(aim_trainer ${SOURCES} ${EXTERNS})
 
