@@ -1,7 +1,6 @@
 #ifndef UI_H
 #define UI_H
 
-#include "tinydir/tinydir.h"
 #include "cvector/cvector.h"
 #include "tomlc17/tomlc17.h"
 
@@ -62,41 +61,40 @@ void findScenarios() {
     }
     cvector_clear(fileMetadata);
 
-    tinydir_dir dir;
+
     // TODO: don't hardcode
-    tinydir_open(&dir, "../../scenarios");
+    FilePathList dir = LoadDirectoryFiles("../../scenarios");
 
     // TODO: lazy loading
-    while (dir.has_next) {
-        tinydir_file file;
-        tinydir_readfile(&dir, &file);
-
-        if (!file.is_dir) {
+    for (size_t i = 0; i < dir.count; i++) {
+        char *file = dir.paths[i];
+        if (IsPathFile(file)) {
             continue;
         }
-        
-        tinydir_dir fileAsDir;
-        tinydir_open(&fileAsDir, file.path);
+
+        FilePathList fileAsDir = LoadDirectoryFiles(file);
+
 
         int check = 0;
         char *tomlFilePath = NULL;
         char *luaFilePath = NULL;
         bool fail = false;
-        while (fileAsDir.has_next) {
-            tinydir_file scenarioFile;
-            tinydir_readfile(&fileAsDir, &scenarioFile);
-            if (strcmp(scenarioFile.name, "info.toml") == 0) {
-                tomlFilePath = malloc(strlen(scenarioFile.path));
-                strcpy(tomlFilePath, scenarioFile.path);
+        for (size_t j = 0; j < fileAsDir.count; j++) {
+            char *scenarioFile = fileAsDir.paths[j];
+            const char *scenarioFileName = GetFileName(scenarioFile);
+            if (strcmp(scenarioFileName, "info.toml") == 0) {
+                tomlFilePath = malloc(strlen(scenarioFile));
+                strcpy(tomlFilePath, scenarioFile);
                 check++;
-            } else if (strcmp(scenarioFile.name, "script.lua") == 0) {
-                luaFilePath = malloc(strlen(scenarioFile.path));
-                strcpy(luaFilePath, scenarioFile.path);
+            } else if (strcmp(scenarioFileName, "script.lua") == 0) {
+                luaFilePath = malloc(strlen(scenarioFile));
+                strcpy(luaFilePath, scenarioFile);
                 check++;
             }
-            tinydir_next(&fileAsDir);
         }
-        tinydir_close(&fileAsDir);
+
+
+        UnloadDirectoryFiles(fileAsDir);
 
         if (check != 2) {
             fail = true;
@@ -160,10 +158,9 @@ cleanup:
         if (fail && (luaFilePath != NULL)) {
             free(luaFilePath);
         }
-        tinydir_next(&dir);
     }
 
-    tinydir_close(&dir);
+    UnloadDirectoryFiles(dir);
 }
 
 void handleReloadScenarios(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
