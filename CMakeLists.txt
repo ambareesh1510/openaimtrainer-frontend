@@ -8,26 +8,36 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 include_directories(extern)
 
 file(GLOB SOURCES "src/*.c")
-file(GLOB EXTERNS "extern")
-set(EXTERNS
-    extern/slotmap/slotmap.c
-    extern/slotmap/stack.c
-    extern/tomlc17/tomlc17.c
+file(GLOB_RECURSE EXTERNS "extern/*.c")
+file(GLOB RAYLIB_PLATFORMS "${CMAKE_SOURCE_DIR}/extern/raylib/platforms/*.c")
+message(STATUS "My list: ${RAYLIB_PLATFORMS}")
+file(GLOB_RECURSE RAYLIB_GLFW "${CMAKE_SOURCE_DIR}/extern/raylib/external/glfw/*.c")
+list(REMOVE_ITEM EXTERNS
+    "${CMAKE_SOURCE_DIR}/extern/clay/clay_renderer_raylib.c"
+    "${CMAKE_SOURCE_DIR}/extern/raylib/external/qoaplay.c"
+    "${CMAKE_SOURCE_DIR}/extern/raylib/external/stb_vorbis.c"
+    ${RAYLIB_PLATFORMS}
+    ${RAYLIB_GLFW}
+
+    "${CMAKE_SOURCE_DIR}/extern/lua/lua.c"
+    "${CMAKE_SOURCE_DIR}/extern/lua/luac.c"
+    "${CMAKE_SOURCE_DIR}/extern/lua/print.c"
 )
+# find_package(PkgConfig REQUIRED)
+# pkg_check_modules(LUA REQUIRED lua5.4)
 
-find_package(raylib REQUIRED)
+# include_directories(${LUA_INCLUDE_DIRS})
+# link_libraries(${LUA_LIBRARIES})
+link_libraries(m)
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(LUA REQUIRED lua5.4)
-
-include_directories(${LUA_INCLUDE_DIRS})
-link_libraries(${LUA_LIBRARIES})
-
+# add_compile_definitions(_GLFW_WAYLAND)
+add_compile_definitions(_GLFW_X11)
+add_compile_definitions(PLATFORM_DESKTOP_GLFW)
 add_executable(aim_trainer ${SOURCES} ${EXTERNS})
 
-target_link_libraries(aim_trainer ${LUA_LIBRARIES})
+# target_link_libraries(aim_trainer ${LUA_LIBRARIES})
 
-target_link_libraries(aim_trainer raylib)
+# target_link_libraries(aim_trainer raylib)
 
 # TODO: eventually should just include the shaders as C strings
 add_custom_target(run

@@ -1,14 +1,14 @@
 #ifndef LUA_INTERFACE_H
 #define LUA_INTERFACE_H
 
-#include <lua.h>
-#include <lualib.h>
-#include <lauxlib.h>
+#include "lua/lua.h"
+#include "lua/lualib.h"
+#include "lua/lauxlib.h"
 
 #include <stdbool.h>
 
-#include "raylib.h"
-#include "raymath.h"
+#include "raylib/raylib.h"
+#include "raylib/raymath.h"
 
 #include "slotmap/slotmap.h"
 #include "cvector/cvector.h"

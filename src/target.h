@@ -1,7 +1,7 @@
 #ifndef TARGET_H
 #define TARGET_H
 
-#include <raylib.h>
+#include "raylib/raylib.h"
 
 struct Sphere {
     float radius;
