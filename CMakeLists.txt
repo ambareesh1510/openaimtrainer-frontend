@@ -6,6 +6,7 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 include_directories(extern)
+include_directories(extern/raylib/external/glfw/include)
 
 file(GLOB SOURCES "src/*.c")
 file(GLOB_RECURSE EXTERNS "extern/*.c")
