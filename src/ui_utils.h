@@ -140,22 +140,32 @@ void renderCheckbox(bool *checked) {
 }
 
 // TODO: change progress from (float *) to float
-// TODO: add a field to determine if the slider is held (so that it can move even if the cursor is not on the slider element)
+// TODO: remove ID field from this struct
 struct SliderData {
     float *progress;
     int id;
+    bool held;
 };
 typedef struct SliderData SliderData;
+
+void updateSlider(Clay_ElementId elementId, Clay_Vector2 pointerPosition, SliderData *data) {
+    Clay_ElementData sliderData = Clay_GetElementData(elementId);
+    float totalWidth = sliderData.boundingBox.width;
+    float currentWidth = pointerPosition.x - sliderData.boundingBox.x;
+    float percent = currentWidth / totalWidth;
+    if (percent < 0.) {
+        percent = 0.;
+    }
+    if (percent > 1.) {
+        percent = 1.;
+    }
+    *(data->progress) = percent;
+}
 
 void handleMoveSlider(Clay_ElementId elementId, Clay_PointerData pointerData, intptr_t userData) {
     if (pointerData.state == CLAY_POINTER_DATA_PRESSED) {
         SliderData *data = (SliderData *) userData;
-        Clay_ElementData sliderData = Clay_GetElementData(
-            CLAY_IDI("slider", data->id)
-        );
-        float totalWidth = sliderData.boundingBox.width;
-        float currentWidth = pointerData.position.x - sliderData.boundingBox.x;
-        *(data->progress) = currentWidth / totalWidth;
+        data->held = true;
     }
 }
 
@@ -165,9 +175,10 @@ void renderSlider(SliderData *data, float controlWidth) {
     int id = data->id;
     float leftWidth = *progress - controlWidth / 2;
     float rightWidth = 1.0 - controlWidth - leftWidth;
+    Clay_ElementId sliderId = CLAY_IDI("slider", id);
 
     CLAY({
-        .id = CLAY_IDI("slider", id),
+        .id = sliderId,
         .layout = {
             .sizing = {
                 .width = CLAY_SIZING_FIXED(300),
@@ -213,7 +224,15 @@ void renderSlider(SliderData *data, float controlWidth) {
             .backgroundColor = COLOR_ORANGE,
         }) {
         }
-        // Clay_OnHover(handleClickCheckbox, (intptr_t) checked);
+    }
+    if (data->held) {
+        if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+            Vector2 raylibPointerPosition = GetMousePosition();
+            Clay_Vector2 pointerPosition = RAYLIB_VECTOR2_TO_CLAY_VECTOR2(raylibPointerPosition);
+            updateSlider(sliderId, pointerPosition, data);
+        } else {
+            data->held = false;
+        }
     }
 }
 
