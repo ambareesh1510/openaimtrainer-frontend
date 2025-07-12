@@ -400,6 +400,7 @@ Clay_RenderCommandArray scenarioUi(ScenarioMetadata metadata) {
 }
 
 void loadLuaScenario(ScenarioMetadata metadata) {
+    bool valid = false;
     char *path = metadata.path;
     DisableCursor();
     initShaders();
@@ -477,6 +478,7 @@ void loadLuaScenario(ScenarioMetadata metadata) {
         if (scenarioState == STARTED) {
             elapsedTime += GetFrameTime();
             if (elapsedTime >= metadata.time) {
+                valid = true;
                 break;
             }
             Ray ray = GetScreenToWorldRay(GetMousePosition(), camera);
@@ -591,6 +593,13 @@ cleanup:
     cvector_shrink_to_fit(targetIds);
     lua_close(L);
     EnableCursor();
+
+    scenarioResults.valid = valid;
+    scenarioResults.score = score;
+    scenarioResults.accuracy =
+        (shotCount != 0)
+            ? (100. * ((float) hitCount) / ((float) shotCount))
+            : (100.);
 }
 
 #endif /* LUA_INTERFACE_H */

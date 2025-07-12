@@ -1,7 +1,22 @@
 #ifndef UI_UTILS_H
 #define UI_UTILS_H
 
+#include <stdbool.h>
+
 #include "lato.h"
+
+enum {
+    MAIN_MENU,
+    SCENARIO_SELECT,
+    SETTINGS,
+    POST_SCENARIO,
+} uiState = MAIN_MENU;
+
+struct {
+    bool valid;
+    int score;
+    float accuracy;
+} scenarioResults;
 
 // TODO: move this to a more appropriate place
 struct ScenarioMetadata {
@@ -31,6 +46,7 @@ enum {
     FONT_ID_BODY_16,
     FONT_ID_BODY_BOLD,
     FONT_ID_HUGE_BOLD,
+    FONT_ID_TITLE_BOLD,
     NUM_FONTS,
 };
 
@@ -39,12 +55,19 @@ Font fonts[NUM_FONTS];
 void initFonts() {
     fonts[FONT_ID_LARGE_BOLD] = LoadFontFromMemory(".ttf", LatoBoldTTF, sizeof(LatoBoldTTF), 24, NULL, 0);
 	SetTextureFilter(fonts[FONT_ID_LARGE_BOLD].texture, TEXTURE_FILTER_BILINEAR);
+
     fonts[FONT_ID_BODY_16] = LoadFontFromMemory(".ttf", LatoRegularTTF, sizeof(LatoRegularTTF), 16, NULL, 0);
     SetTextureFilter(fonts[FONT_ID_BODY_16].texture, TEXTURE_FILTER_BILINEAR);
+
     fonts[FONT_ID_BODY_BOLD] = LoadFontFromMemory(".ttf", LatoBoldTTF, sizeof(LatoBoldTTF), 16, NULL, 0);
     SetTextureFilter(fonts[FONT_ID_BODY_BOLD].texture, TEXTURE_FILTER_BILINEAR);
+
     fonts[FONT_ID_HUGE_BOLD] = LoadFontFromMemory(".ttf", LatoBoldTTF, sizeof(LatoBoldTTF), 36, NULL, 0);
     SetTextureFilter(fonts[FONT_ID_HUGE_BOLD].texture, TEXTURE_FILTER_BILINEAR);
+
+    fonts[FONT_ID_TITLE_BOLD] = LoadFontFromMemory(".ttf", LatoBoldTTF, sizeof(LatoBoldTTF), 56, NULL, 0);
+    SetTextureFilter(fonts[FONT_ID_TITLE_BOLD].texture, TEXTURE_FILTER_BILINEAR);
+
     Clay_SetMeasureTextFunction(Raylib_MeasureText, fonts);
 }
 
@@ -73,6 +96,13 @@ Clay_TextElementConfig hugeTextConfig = {
     .fontId = FONT_ID_HUGE_BOLD,
     .letterSpacing = 1,
     .fontSize = 36,
+    .textColor = COLOR_WHITE
+};
+
+Clay_TextElementConfig titleTextConfig = {
+    .fontId = FONT_ID_TITLE_BOLD,
+    .letterSpacing = 1,
+    .fontSize = 56,
     .textColor = COLOR_WHITE
 };
 
