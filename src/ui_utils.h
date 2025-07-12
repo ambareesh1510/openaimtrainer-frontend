@@ -110,4 +110,111 @@ void hSpacer() {
     CLAY({ .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) } } }) {};
 }
 
+void handleClickCheckbox(Clay_ElementId elementId, Clay_PointerData pointerData, intptr_t userData) {
+    if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        bool *checked = (bool *) userData;
+        *checked = !(*checked);
+    }
+}
+
+// TODO: make the checkbox grow so that caller can define dimensions?
+void renderCheckbox(bool *checked) {
+    CLAY({
+        .layout = {
+            .sizing = {
+                .width = CLAY_SIZING_FIXED(30),
+                .height = CLAY_SIZING_FIXED(30),
+            },
+        },
+        .border = {
+            .width = { 5, 5, 5, 5 },
+            .color = COLOR_WHITE,
+        },
+        .backgroundColor =
+            (*checked)
+                ? COLOR_WHITE
+                : (Clay_Color) { 0, 0, 0, 0 }, 0.05,
+    }) {
+        Clay_OnHover(handleClickCheckbox, (intptr_t) checked);
+    }
+}
+
+// TODO: change progress from (float *) to float
+// TODO: add a field to determine if the slider is held (so that it can move even if the cursor is not on the slider element)
+struct SliderData {
+    float *progress;
+    int id;
+};
+typedef struct SliderData SliderData;
+
+void handleMoveSlider(Clay_ElementId elementId, Clay_PointerData pointerData, intptr_t userData) {
+    if (pointerData.state == CLAY_POINTER_DATA_PRESSED) {
+        SliderData *data = (SliderData *) userData;
+        Clay_ElementData sliderData = Clay_GetElementData(
+            CLAY_IDI("slider", data->id)
+        );
+        float totalWidth = sliderData.boundingBox.width;
+        float currentWidth = pointerData.position.x - sliderData.boundingBox.x;
+        *(data->progress) = currentWidth / totalWidth;
+    }
+}
+
+void renderSlider(SliderData *data, float controlWidth) {
+    // TODO: fix this! percents are sometimes negative
+    float *progress = data->progress;
+    int id = data->id;
+    float leftWidth = *progress - controlWidth / 2;
+    float rightWidth = 1.0 - controlWidth - leftWidth;
+
+    CLAY({
+        .id = CLAY_IDI("slider", id),
+        .layout = {
+            .sizing = {
+                .width = CLAY_SIZING_FIXED(300),
+                .height = CLAY_SIZING_FIXED(30),
+            },
+            .childAlignment = {
+                .y = CLAY_ALIGN_Y_CENTER,
+            },
+        },
+    }) {
+        Clay_OnHover(handleMoveSlider, (intptr_t) data);
+        CLAY({
+            .layout = {
+                .sizing = {
+                    .width = CLAY_SIZING_PERCENT(leftWidth),
+                    .height = CLAY_SIZING_FIXED(10),
+                },
+            },
+            .backgroundColor = COLOR_BLUE,
+        }) {
+        }
+        CLAY({
+            .layout = {
+                .sizing = {
+                    .width = CLAY_SIZING_PERCENT(controlWidth),
+                    .height = CLAY_SIZING_FIXED(30),
+                },
+            },
+            .border = {
+                .width = { 3, 3, 3, 3 },
+                .color = COLOR_BLACK,
+            },
+            .backgroundColor = COLOR_WHITE,
+        }) {
+        }
+        CLAY({
+            .layout = {
+                .sizing = {
+                    .width = CLAY_SIZING_PERCENT(rightWidth),
+                    .height = CLAY_SIZING_FIXED(10),
+                },
+            },
+            .backgroundColor = COLOR_ORANGE,
+        }) {
+        }
+        // Clay_OnHover(handleClickCheckbox, (intptr_t) checked);
+    }
+}
+
 #endif /* UI_UTILS_H */

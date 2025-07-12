@@ -10,6 +10,7 @@
 
 #include "ui_utils.h"
 #include "main_menu.h"
+#include "settings.h"
 #include "scenario_select.h"
 #include "post_scenario.h"
 #include "lua_interface.h"
@@ -57,6 +58,7 @@ void UpdateDrawFrame(Font* fonts)
     } else if (uiState == SCENARIO_SELECT) {
         renderScenarioSelectScreen();
     } else if (uiState == SETTINGS) {
+        renderSettingsMenu();
     } else if (uiState == POST_SCENARIO) {
         // TODO: make it transition to this state after scenario ends
         renderPostScenario();
