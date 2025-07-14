@@ -4,9 +4,44 @@
 #include "string.h"
 #include "stdio.h"
 #include "stdlib.h"
+#include "../cvector/cvector.h"
 
 #define CLAY_RECTANGLE_TO_RAYLIB_RECTANGLE(rectangle) (Rectangle) { .x = rectangle.x, .y = rectangle.y, .width = rectangle.width, .height = rectangle.height }
 #define CLAY_COLOR_TO_RAYLIB_COLOR(color) (Color) { .r = (unsigned char)roundf(color.r), .g = (unsigned char)roundf(color.g), .b = (unsigned char)roundf(color.b), .a = (unsigned char)roundf(color.a) }
+
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
+struct Clay_ScissorData {
+    int x;
+    int y;
+    int width;
+    int height;
+    uint32_t id;
+};
+typedef struct Clay_ScissorData Clay_ScissorData;
+
+Clay_ScissorData clipScissorData(Clay_ScissorData outer, Clay_ScissorData inner) {
+    int x = MAX(outer.x, inner.x);
+    int y = MAX(outer.y, inner.y);
+    int width = MAX(
+        MIN(outer.x + outer.width, inner.x + inner.width) - x,
+        0
+    );
+    int height = MAX(
+        MIN(outer.y + outer.height, inner.y + inner.height) - y,
+        0
+    );
+    return (Clay_ScissorData) {
+        .x = x,
+        .y = y,
+        .width = width,
+        .height = height,
+        .id = inner.id,
+    };
+}
+
+cvector_vector_type(Clay_ScissorData) scissorDataStack = NULL;
 
 Camera Raylib_camera;
 
@@ -147,6 +182,7 @@ void Clay_Raylib_Close()
 
 void Clay_Raylib_Render(Clay_RenderCommandArray renderCommands, Font* fonts)
 {
+    cvector_clear(scissorDataStack);
     for (int j = 0; j < renderCommands.length; j++)
     {
         Clay_RenderCommand *renderCommand = Clay_RenderCommandArray_Get(&renderCommands, j);
@@ -189,11 +225,41 @@ void Clay_Raylib_Render(Clay_RenderCommandArray renderCommands, Font* fonts)
                 break;
             }
             case CLAY_RENDER_COMMAND_TYPE_SCISSOR_START: {
-                BeginScissorMode((int)roundf(boundingBox.x), (int)roundf(boundingBox.y), (int)roundf(boundingBox.width), (int)roundf(boundingBox.height));
+                Clay_ScissorData data = {
+                    .x = (int) roundf(boundingBox.x),
+                    .y = (int) roundf(boundingBox.y),
+                    .width = (int) roundf(boundingBox.width),
+                    .height = (int) roundf(boundingBox.height),
+                    .id = renderCommand->id,
+                };
+                if (cvector_size(scissorDataStack) > 0) {
+                    data = clipScissorData(
+                        *cvector_back(scissorDataStack),
+                        data
+                    );
+                }
+                cvector_push_back(scissorDataStack, data);
+                BeginScissorMode(
+                    data.x,
+                    data.y,
+                    data.width,
+                    data.height
+                );
                 break;
             }
             case CLAY_RENDER_COMMAND_TYPE_SCISSOR_END: {
                 EndScissorMode();
+                cvector_pop_back(scissorDataStack);
+
+                if (cvector_size(scissorDataStack) > 0) {
+                    Clay_ScissorData *data = cvector_back(scissorDataStack);
+                    BeginScissorMode(
+                        data->x,
+                        data->y,
+                        data->width,
+                        data->height
+                    );
+                }
                 break;
             }
             case CLAY_RENDER_COMMAND_TYPE_RECTANGLE: {

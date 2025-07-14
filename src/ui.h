@@ -60,7 +60,6 @@ void UpdateDrawFrame(Font* fonts)
     } else if (uiState == SETTINGS) {
         renderSettingsMenu();
     } else if (uiState == POST_SCENARIO) {
-        // TODO: make it transition to this state after scenario ends
         renderPostScenario();
     }
     Clay_RenderCommandArray renderCommands = Clay_EndLayout();
@@ -73,7 +72,7 @@ void UpdateDrawFrame(Font* fonts)
 bool reinitializeClay = false;
 
 void HandleClayErrors(Clay_ErrorData errorData) {
-    printf("%s", errorData.errorText.chars);
+    printf("%s\n", errorData.errorText.chars);
     if (errorData.errorType == CLAY_ERROR_TYPE_ELEMENTS_CAPACITY_EXCEEDED) {
         reinitializeClay = true;
         Clay_SetMaxElementCount(Clay_GetMaxElementCount() * 2);

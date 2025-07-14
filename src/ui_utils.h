@@ -236,4 +236,23 @@ void renderSlider(SliderData *data, float controlWidth) {
     }
 }
 
+
+void handleToScenarioSelect(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        uiState = SCENARIO_SELECT;
+    }
+}
+
+void handleToSettings(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        uiState = SETTINGS;
+    }
+}
+
+void handleToMainMenu(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        uiState = MAIN_MENU;
+    }
+}
+
 #endif /* UI_UTILS_H */

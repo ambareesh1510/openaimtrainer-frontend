@@ -51,20 +51,8 @@ void renderSettingsMenu(void) {
                 .padding = { 5, 5, 5, 5 },
             },
         }) {
-            Clay_OnHover(handleToScenarioSelect, 0);
-            CLAY_TEXT(CLAY_STRING("Scenario Select"), &hugeTextConfig);
-        }
-
-        CLAY({
-            .backgroundColor = Clay_Hovered()
-                ? COLOR_DARK_BLUE
-                : COLOR_LIGHT_GRAY,
-            .layout = {
-                .padding = { 5, 5, 5, 5 },
-            },
-        }) {
-            Clay_OnHover(handleToSettings, 0);
-            CLAY_TEXT(CLAY_STRING("Settings"), &hugeTextConfig);
+            Clay_OnHover(handleToMainMenu, 0);
+            CLAY_TEXT(CLAY_STRING("Back"), &hugeTextConfig);
         }
     }
 }

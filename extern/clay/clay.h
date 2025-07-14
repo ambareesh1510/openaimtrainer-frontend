@@ -982,6 +982,10 @@ typeName *arrayName##_Add(arrayName *array, typeName item) {                    
         array->internalArray[array->length++] = item;                                                           \
         return &array->internalArray[array->length - 1];                                                        \
     }                                                                                                           \
+    else {                                                                                                      \
+        printf("%s\n", #arrayName);                                                           \
+        return &array->internalArray[array->length - 1];                                                        \
+    }                                                                                                           \
     return &typeName##_DEFAULT;                                                                                 \
 }                                                                                                               \
                                                                                                                 \
@@ -2196,7 +2200,7 @@ void Clay__InitializePersistentMemory(Clay_Context* context) {
     int32_t maxMeasureTextCacheWordCount = context->maxMeasureTextCacheWordCount;
     Clay_Arena *arena = &context->internalArena;
 
-    context->scrollContainerDatas = Clay__ScrollContainerDataInternalArray_Allocate_Arena(10, arena);
+    context->scrollContainerDatas = Clay__ScrollContainerDataInternalArray_Allocate_Arena(maxElementCount, arena);
     context->layoutElementsHashMapInternal = Clay__LayoutElementHashMapItemArray_Allocate_Arena(maxElementCount, arena);
     context->layoutElementsHashMap = Clay__int32_tArray_Allocate_Arena(maxElementCount, arena);
     context->measureTextHashMapInternal = Clay__MeasureTextCacheItemArray_Allocate_Arena(maxElementCount, arena);
@@ -3052,7 +3056,9 @@ void Clay__CalculateFinalLayout(void) {
                     }
                 }
                 // This exists because the scissor needs to end _after_ borders between elements
-                if (closeClipElement) {
+                Clay_BoundingBox currentElementBoundingBox = { currentElementTreeNode->position.x, currentElementTreeNode->position.y, currentElement->dimensions.width, currentElement->dimensions.height };
+                bool offscreen = Clay__ElementIsOffscreen(&currentElementBoundingBox);
+                if (closeClipElement && !offscreen) {
                     Clay__AddRenderCommand(CLAY__INIT(Clay_RenderCommand) {
                         .id = Clay__HashNumber(currentElement->id, rootElement->childrenOrTextContent.children.length + 11).id,
                         .commandType = CLAY_RENDER_COMMAND_TYPE_SCISSOR_END,
@@ -3875,7 +3881,7 @@ bool Clay__Array_RangeCheck(int32_t index, int32_t length)
     Clay_Context* context = Clay_GetCurrentContext();
     context->errorHandler.errorHandlerFunction(CLAY__INIT(Clay_ErrorData) {
             .errorType = CLAY_ERROR_TYPE_INTERNAL_ERROR,
-            .errorText = CLAY_STRING("Clay attempted to make an out of bounds array access. This is an internal error and is likely a bug."),
+            .errorText = CLAY_STRING("RangeCheck: Clay attempted to make an out of bounds array access. This is an internal error and is likely a bug."),
             .userData = context->errorHandler.userData });
     return false;
 }
@@ -3888,7 +3894,7 @@ bool Clay__Array_AddCapacityCheck(int32_t length, int32_t capacity)
     Clay_Context* context = Clay_GetCurrentContext();
     context->errorHandler.errorHandlerFunction(CLAY__INIT(Clay_ErrorData) {
         .errorType = CLAY_ERROR_TYPE_INTERNAL_ERROR,
-        .errorText = CLAY_STRING("Clay attempted to make an out of bounds array access. This is an internal error and is likely a bug."),
+        .errorText = CLAY_STRING("CapacityCheck: Clay attempted to make an out of bounds array access. This is an internal error and is likely a bug."),
         .userData = context->errorHandler.userData });
     return false;
 }

@@ -4,18 +4,6 @@
 #include "ui_utils.h"
 
 
-void handleToScenarioSelect(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
-    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
-        uiState = SCENARIO_SELECT;
-    }
-}
-
-void handleToSettings(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
-    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
-        uiState = SETTINGS;
-    }
-}
-
 void renderMainMenu(void) {
     CLAY({
         .layout = {
@@ -33,7 +21,7 @@ void renderMainMenu(void) {
         },
         .backgroundColor = COLOR_GRAY,
     }) {
-        CLAY_TEXT(CLAY_STRING("Insane Corp Aim Trainer"), &titleTextConfig);
+        CLAY_TEXT(CLAY_STRING("Aim Trainer"), &titleTextConfig);
 
         CLAY({
             .layout = {

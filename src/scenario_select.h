@@ -15,12 +15,12 @@ cvector_vector_type(ScenarioMetadata) fileMetadata = NULL;
 char *timeBuffer = NULL;
 void RenderScenarioCard(int index) {
     CLAY({
-        .id = CLAY_IDI("ScenarioCard", index),
         .layout = {
             .sizing = {
                 .width = CLAY_SIZING_GROW(0),
             },
             .padding = { 5, 5, 5, 5 },
+            .childGap = 16,
         },
         .backgroundColor = (index == selectedScenarioIndex)
             ? COLOR_DARK_GREEN
@@ -30,17 +30,56 @@ void RenderScenarioCard(int index) {
     }) {
         ScenarioMetadata metadata = fileMetadata[index];
         Clay_OnHover(handleSelectScenario, index);
-        CLAY_TEXT(CLAY_DYNSTR(metadata.name), CLAY_TEXT_CONFIG(boldTextConfig));
-        hSpacer();
-        CLAY_TEXT(CLAY_DYNSTR(metadata.author), CLAY_TEXT_CONFIG(normalTextConfig));
-        hSpacer();
+        // TODO: make these text elements scroll automatically
+        CLAY({
+            .layout = {
+                .sizing = {
+                    .width = CLAY_SIZING_PERCENT(0.5),
+                },
+            },
+            .clip = {
+                .horizontal = true,
+                .childOffset = Clay_GetScrollOffset(),
+            },
+        }) {
+            CLAY_TEXT(CLAY_DYNSTR(metadata.name), CLAY_TEXT_CONFIG(boldTextConfig));
+        }
+
+        CLAY({
+            .layout = {
+                .sizing = {
+                    .width = CLAY_SIZING_PERCENT(0.4),
+                },
+            },
+            .clip = {
+                // .horizontal = true,
+                // .childOffset = Clay_GetScrollOffset(),
+            },
+        }) {
+            CLAY_TEXT(CLAY_DYNSTR(metadata.author), CLAY_TEXT_CONFIG(normalTextConfig));
+        }
 
         const char *timeFormat = "%.1fs";
         size_t needed = snprintf(NULL, 0, timeFormat, metadata.time) + 1;
         timeBuffer = realloc(timeBuffer, needed);
         sprintf(timeBuffer, timeFormat, metadata.time);
 
-        CLAY_TEXT(CLAY_DYNSTR(timeBuffer), CLAY_TEXT_CONFIG(normalTextConfig));
+        CLAY({
+            .layout = {
+                .sizing = {
+                    .width = CLAY_SIZING_PERCENT(0.1),
+                },
+                .childAlignment = {
+                    .x = CLAY_ALIGN_X_RIGHT,
+                },
+            },
+            .clip = {
+                // .horizontal = true,
+                // .childOffset = Clay_GetScrollOffset(),
+            },
+        }) {
+            CLAY_TEXT(CLAY_DYNSTR(timeBuffer), CLAY_TEXT_CONFIG(normalTextConfig));
+        }
     }
 }
 
@@ -197,30 +236,62 @@ void renderScenarioSelectScreen(void) {
             },
             .backgroundColor = COLOR_GRAY,
         }) {
-            for (size_t i = 0; i < cvector_size(fileMetadata); i++) {
-                RenderScenarioCard(i);
-            }
             CLAY({
-                .id = CLAY_ID("LeftSpacer"),
+                .clip = {
+                    .vertical = true,
+                    .childOffset = Clay_GetScrollOffset(),
+                },
                 .layout = {
                     .sizing = {
-                        .height = CLAY_SIZING_GROW(0)
+                        .width = CLAY_SIZING_GROW(0),
+                        .height = CLAY_SIZING_GROW(0),
                     },
-                },
-            }) {}
-
-            CLAY({
-                .id = CLAY_ID("ReloadScenarios"),
-                .backgroundColor = Clay_Hovered()
-                    ? COLOR_DARK_BLUE
-                    : COLOR_LIGHT_GRAY,
-                .layout = {
-                    .padding = { 5, 5, 5, 5 },
+                    .childGap = 10,
+                    .layoutDirection = CLAY_TOP_TO_BOTTOM,
                 },
             }) {
-                Clay_OnHover(handleReloadScenarios, 0);
-                CLAY_TEXT(CLAY_STRING("Reload"), &normalTextConfig);
+                for (size_t i = 0; i < cvector_size(fileMetadata); i++) {
+                    RenderScenarioCard(i);
+                }
             }
+
+            CLAY({
+                .layout = {
+                    .sizing = {
+                        .height = CLAY_SIZING_FIT(0),
+                        .width = CLAY_SIZING_GROW(0),
+                    },
+                    .childAlignment = CLAY_LEFT_TO_RIGHT,
+                    .childGap = 16,
+                },
+                .backgroundColor = COLOR_GRAY,
+            }) {
+                CLAY({
+                    .backgroundColor = Clay_Hovered()
+                        ? COLOR_DARK_BLUE
+                        : COLOR_LIGHT_GRAY,
+                    .layout = {
+                        .padding = { 5, 5, 5, 5 },
+                    },
+                }) {
+                    Clay_OnHover(handleToMainMenu, 0);
+                    CLAY_TEXT(CLAY_STRING("Back"), &normalTextConfig);
+                }
+
+                CLAY({
+                    .id = CLAY_ID("ReloadScenarios"),
+                    .backgroundColor = Clay_Hovered()
+                        ? COLOR_DARK_BLUE
+                        : COLOR_LIGHT_GRAY,
+                    .layout = {
+                        .padding = { 5, 5, 5, 5 },
+                    },
+                }) {
+                    Clay_OnHover(handleReloadScenarios, 0);
+                    CLAY_TEXT(CLAY_STRING("Reload"), &normalTextConfig);
+                }
+            }
+
         }
 
         CLAY({

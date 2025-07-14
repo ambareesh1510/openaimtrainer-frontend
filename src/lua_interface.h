@@ -459,7 +459,7 @@ void loadLuaScenario(ScenarioMetadata metadata) {
                 GetMouseDelta().y * 0.05f,
                 0.0f
             },
-            GetMouseWheelMove() * 2.0f
+            0.0f
         );
 
 
