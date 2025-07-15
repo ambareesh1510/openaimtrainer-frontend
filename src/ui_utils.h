@@ -25,6 +25,10 @@ struct ScenarioMetadata {
     const char *author;
     const char *description;
     double time;
+    double titleOffset;
+    double authorOffset;
+    double timeOffset;
+
 };
 typedef struct ScenarioMetadata ScenarioMetadata;
 

@@ -28,10 +28,13 @@ void RenderScenarioCard(int index) {
                 ? COLOR_DARK_BLUE
                 : COLOR_LIGHT_GRAY),
     }) {
-        ScenarioMetadata metadata = fileMetadata[index];
+        Clay_ElementId nameId = CLAY_IDI("ScenarioCard_Name", index);
+        Clay_ElementId authorId = CLAY_IDI("ScenarioCard_Author", index);
+        Clay_ElementId timeId = CLAY_IDI("ScenarioCard_Time", index);
+        ScenarioMetadata *metadata = cvector_at(fileMetadata, index);
         Clay_OnHover(handleSelectScenario, index);
-        // TODO: make these text elements scroll automatically
         CLAY({
+            .id = nameId,
             .layout = {
                 .sizing = {
                     .width = CLAY_SIZING_PERCENT(0.5),
@@ -39,10 +42,27 @@ void RenderScenarioCard(int index) {
             },
             .clip = {
                 .horizontal = true,
-                .childOffset = Clay_GetScrollOffset(),
+                .childOffset = metadata->titleOffset,
             },
         }) {
-            CLAY_TEXT(CLAY_DYNSTR(metadata.name), CLAY_TEXT_CONFIG(boldTextConfig));
+            if (Clay_Hovered()) {
+                float scrollWidth = Clay_GetScrollContainerData(nameId).contentDimensions.width;
+                float elementWidth = Clay_GetElementData(nameId).boundingBox.width;
+                if (elementWidth < scrollWidth) {
+                    metadata->titleOffset -= GetFrameTime() * 60.0 * 1.0;
+                    metadata->titleOffset = CLAY__MAX(
+                        CLAY__MIN(
+                            metadata->titleOffset,
+                            0
+                        ),
+                        -(scrollWidth - elementWidth)
+                    );
+                }
+
+            } else {
+                metadata->titleOffset = 0.0;
+            }
+            CLAY_TEXT(CLAY_DYNSTR(metadata->name), CLAY_TEXT_CONFIG(boldTextConfig));
         }
 
         CLAY({
@@ -52,17 +72,34 @@ void RenderScenarioCard(int index) {
                 },
             },
             .clip = {
-                // .horizontal = true,
-                // .childOffset = Clay_GetScrollOffset(),
+                .horizontal = true,
+                .childOffset = metadata->authorOffset,
             },
         }) {
-            CLAY_TEXT(CLAY_DYNSTR(metadata.author), CLAY_TEXT_CONFIG(normalTextConfig));
+            if (Clay_Hovered()) {
+                float scrollWidth = Clay_GetScrollContainerData(authorId).contentDimensions.width;
+                float elementWidth = Clay_GetElementData(authorId).boundingBox.width;
+                if (elementWidth < scrollWidth) {
+                    metadata->titleOffset -= 1.0;
+                    metadata->titleOffset = CLAY__MAX(
+                        CLAY__MIN(
+                            metadata->authorOffset,
+                            0
+                        ),
+                        -(scrollWidth - elementWidth)
+                    );
+                }
+
+            } else {
+                metadata->authorOffset = 0.0;
+            }
+            CLAY_TEXT(CLAY_DYNSTR(metadata->author), CLAY_TEXT_CONFIG(normalTextConfig));
         }
 
         const char *timeFormat = "%.1fs";
-        size_t needed = snprintf(NULL, 0, timeFormat, metadata.time) + 1;
+        size_t needed = snprintf(NULL, 0, timeFormat, metadata->time) + 1;
         timeBuffer = realloc(timeBuffer, needed);
-        sprintf(timeBuffer, timeFormat, metadata.time);
+        sprintf(timeBuffer, timeFormat, metadata->time);
 
         CLAY({
             .layout = {
@@ -74,10 +111,26 @@ void RenderScenarioCard(int index) {
                 },
             },
             .clip = {
-                // .horizontal = true,
-                // .childOffset = Clay_GetScrollOffset(),
+                .horizontal = true,
+                .childOffset = metadata->timeOffset,
             },
         }) {
+            if (Clay_Hovered()) {
+                float scrollWidth = Clay_GetScrollContainerData(timeId).contentDimensions.width;
+                float elementWidth = Clay_GetElementData(timeId).boundingBox.width;
+                if (elementWidth < scrollWidth) {
+                    metadata->timeOffset -= 1.0;
+                    metadata->timeOffset = CLAY__MAX(
+                        CLAY__MIN(
+                            metadata->timeOffset,
+                            0
+                        ),
+                        -(scrollWidth - elementWidth)
+                    );
+                }
+            } else {
+                metadata->timeOffset = 0.0;
+            }
             CLAY_TEXT(CLAY_DYNSTR(timeBuffer), CLAY_TEXT_CONFIG(normalTextConfig));
         }
     }
@@ -250,6 +303,7 @@ void renderScenarioSelectScreen(void) {
                     .layoutDirection = CLAY_TOP_TO_BOTTOM,
                 },
             }) {
+                // TODO: make this list scrollable with arrow keys
                 for (size_t i = 0; i < cvector_size(fileMetadata); i++) {
                     RenderScenarioCard(i);
                 }
