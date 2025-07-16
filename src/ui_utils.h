@@ -159,6 +159,7 @@ struct SliderData {
     bool held;
     float min;
     float max;
+    float snap;
 };
 typedef struct SliderData SliderData;
 
@@ -174,12 +175,24 @@ void updateSlider(Clay_ElementId elementId, Clay_Vector2 pointerPosition, Slider
         percent = 1.;
     }
     *(data->progress) = data->min + percent * (data->max - data->min);
+    if (data->snap != 0) {
+        float n = *(data->progress) / data->snap;
+        int m;
+        if ((n - (int) n) >= 0.5f) {
+            m = (int) (n + 1.0f);
+        } else {
+            m = (int) n;
+        }
+        *(data->progress) = m * data->snap;
+    }
 }
 
+bool sliderSelected = false;
 void handleMoveSlider(Clay_ElementId elementId, Clay_PointerData pointerData, intptr_t userData) {
-    if (pointerData.state == CLAY_POINTER_DATA_PRESSED) {
+    if (pointerData.state == CLAY_POINTER_DATA_PRESSED && !sliderSelected) {
         SliderData *data = (SliderData *) userData;
         data->held = true;
+        sliderSelected = true;
     }
 }
 
@@ -247,6 +260,7 @@ void renderSlider(SliderData *data, float controlWidth) {
             updateSlider(sliderId, pointerPosition, data);
         } else {
             data->held = false;
+            sliderSelected = false;
         }
     }
 }

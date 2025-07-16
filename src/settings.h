@@ -21,6 +21,7 @@ SliderData centerDotRadiusSliderData = {
     .id = 0,
     .min = 0.0f,
     .max = 10.0f,
+    .snap = 1.0f,
 };
 
 SliderData innerLineLengthSliderData = {
@@ -28,6 +29,7 @@ SliderData innerLineLengthSliderData = {
     .id = 1,
     .min = 0.0f,
     .max = 10.0f,
+    .snap = 1.0f,
 };
 
 SliderData innerLineWidthSliderData = {
@@ -35,6 +37,7 @@ SliderData innerLineWidthSliderData = {
     .id = 2,
     .min = 0.0f,
     .max = 10.0f,
+    .snap = 1.0f,
 };
 
 SliderData innerLineGapSliderData = {
@@ -42,6 +45,7 @@ SliderData innerLineGapSliderData = {
     .id = 3,
     .min = 0.0f,
     .max = 10.0f,
+    .snap = 1.0f,
 };
 
 SliderData outerLineLengthSliderData = {
@@ -49,6 +53,7 @@ SliderData outerLineLengthSliderData = {
     .id = 4,
     .min = 0.0f,
     .max = 10.0f,
+    .snap = 1.0f,
 };
 
 SliderData outerLineWidthSliderData = {
@@ -56,6 +61,7 @@ SliderData outerLineWidthSliderData = {
     .id = 5,
     .min = 0.0f,
     .max = 10.0f,
+    .snap = 1.0f,
 };
 
 SliderData outerLineGapSliderData = {
@@ -63,6 +69,7 @@ SliderData outerLineGapSliderData = {
     .id = 6,
     .min = 0.0f,
     .max = 10.0f,
+    .snap = 1.0f,
 };
 
 SliderData sensitivitySliderData = {
@@ -94,7 +101,7 @@ void renderSettingsMenu(void) {
         }
 
         HCENTER {
-            CLAY_TEXT(CLAY_STRING("Crosshair Settings"), &hugeTextConfig);
+            CLAY_TEXT(CLAY_STRING("Crosshair"), &hugeTextConfig);
         }
 
         CLAY({
