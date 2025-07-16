@@ -45,6 +45,12 @@ typedef struct ScenarioMetadata ScenarioMetadata;
 
 #define CLAY_DYNSTR(s) ((Clay_String) { .chars = s, .length = strlen(s) })
 
+#define CDIV(w, h) CLAY({ .layout = { .sizing = { .width = (w), .height = (h), }, }, })
+
+#define HCENTER CLAY({ .layout = { .sizing = { .width = CLAY_SIZING_GROW(0), }, .childAlignment = { .x = CLAY_ALIGN_X_CENTER }, }, })
+#define VCENTER CLAY({ .layout = { .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }, }, })
+#define HVCENTER CLAY({ .layout = { .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }, }, })
+
 enum {
     FONT_ID_LARGE_BOLD,
     FONT_ID_BODY_16,
@@ -126,8 +132,10 @@ void renderCheckbox(bool *checked) {
     CLAY({
         .layout = {
             .sizing = {
-                .width = CLAY_SIZING_FIXED(30),
-                .height = CLAY_SIZING_FIXED(30),
+                // .width = CLAY_SIZING_FIXED(30),
+                // .height = CLAY_SIZING_FIXED(30),
+                .width = CLAY_SIZING_GROW(0),
+                .height = CLAY_SIZING_GROW(0),
             },
         },
         .border = {
@@ -149,6 +157,8 @@ struct SliderData {
     float *progress;
     int id;
     bool held;
+    float min;
+    float max;
 };
 typedef struct SliderData SliderData;
 
@@ -163,7 +173,7 @@ void updateSlider(Clay_ElementId elementId, Clay_Vector2 pointerPosition, Slider
     if (percent > 1.) {
         percent = 1.;
     }
-    *(data->progress) = percent;
+    *(data->progress) = data->min + percent * (data->max - data->min);
 }
 
 void handleMoveSlider(Clay_ElementId elementId, Clay_PointerData pointerData, intptr_t userData) {
@@ -176,8 +186,9 @@ void handleMoveSlider(Clay_ElementId elementId, Clay_PointerData pointerData, in
 void renderSlider(SliderData *data, float controlWidth) {
     // TODO: fix this! percents are sometimes negative
     float *progress = data->progress;
+    float percent = (*progress - data->min) / (data->max - data->min);
     int id = data->id;
-    float leftWidth = *progress - controlWidth / 2;
+    float leftWidth = percent - controlWidth / 2;
     float rightWidth = 1.0 - controlWidth - leftWidth;
     Clay_ElementId sliderId = CLAY_IDI("slider", id);
 

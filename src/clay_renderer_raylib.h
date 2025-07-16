@@ -4,13 +4,18 @@
 #include "string.h"
 #include "stdio.h"
 #include "stdlib.h"
-#include "../cvector/cvector.h"
+#include "cvector/cvector.h"
+
+#include "settings_common.h"
 
 #define CLAY_RECTANGLE_TO_RAYLIB_RECTANGLE(rectangle) (Rectangle) { .x = rectangle.x, .y = rectangle.y, .width = rectangle.width, .height = rectangle.height }
 #define CLAY_COLOR_TO_RAYLIB_COLOR(color) (Color) { .r = (unsigned char)roundf(color.r), .g = (unsigned char)roundf(color.g), .b = (unsigned char)roundf(color.b), .a = (unsigned char)roundf(color.a) }
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
+RenderTexture2D settingsCrosshairTexture;
+bool settingsCrosshairTextureInitialized = false;
 
 struct Clay_ScissorData {
     int x;
@@ -305,21 +310,22 @@ void Clay_Raylib_Render(Clay_RenderCommandArray renderCommands, Font* fonts)
                 break;
             }
             case CLAY_RENDER_COMMAND_TYPE_CUSTOM: {
-                Clay_CustomRenderData *config = &renderCommand->renderData.custom;
-                CustomLayoutElement *customElement = (CustomLayoutElement *)config->customData;
-                if (!customElement) continue;
-                switch (customElement->type) {
-                    case CUSTOM_LAYOUT_ELEMENT_TYPE_3D_MODEL: {
-                        Clay_BoundingBox rootBox = renderCommands.internalArray[0].boundingBox;
-                        float scaleValue = CLAY__MIN(CLAY__MIN(1, 768 / rootBox.height) * CLAY__MAX(1, rootBox.width / 1024), 1.5f);
-                        Ray positionRay = GetScreenToWorldPointWithZDistance((Vector2) { renderCommand->boundingBox.x + renderCommand->boundingBox.width / 2, renderCommand->boundingBox.y + (renderCommand->boundingBox.height / 2) + 20 }, Raylib_camera, (int)roundf(rootBox.width), (int)roundf(rootBox.height), 140);
-                        BeginMode3D(Raylib_camera);
-                            DrawModel(customElement->customData.model.model, positionRay.position, customElement->customData.model.scale * scaleValue, WHITE);        // Draw 3d model with texture
-                        EndMode3D();
-                        break;
-                    }
-                    default: break;
+                // Clay_CustomRenderData *config = &renderCommand->renderData.custom;
+                if (!settingsCrosshairTextureInitialized) {
+                    settingsCrosshairTexture = LoadRenderTexture(
+                        boundingBox.width,
+                        boundingBox.height
+                    );
+                    settingsCrosshairTextureInitialized = true;
                 }
+
+                drawCrosshair(settingsCrosshairTexture, BLACK);
+                DrawTexture(
+                    settingsCrosshairTexture.texture,
+                    boundingBox.x,
+                    boundingBox.y,
+                    WHITE
+                );
                 break;
             }
             default: {

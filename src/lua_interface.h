@@ -16,6 +16,7 @@
 #include "target.h"
 #include "ui_utils.h"
 #include "shader.h"
+#include "settings_common.h"
 
 Slotmap targetMap;
 
@@ -399,6 +400,7 @@ Clay_RenderCommandArray scenarioUi(ScenarioMetadata metadata) {
     return Clay_EndLayout();
 }
 
+RenderTexture2D crosshairTexture;
 void loadLuaScenario(ScenarioMetadata metadata) {
     bool valid = false;
     char *path = metadata.path;
@@ -438,6 +440,9 @@ void loadLuaScenario(ScenarioMetadata metadata) {
     if (callLuaFunction(L, "init") != 0) {
         goto cleanup;
     }
+
+    crosshairTexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
+    drawCrosshair(crosshairTexture, BLANK);
 
     // TODO: handle WindowShouldClose() separately (currently only exits
     // the scenario)
@@ -572,12 +577,7 @@ void loadLuaScenario(ScenarioMetadata metadata) {
             EndMode3D();
 
             if (scenarioState == STARTING || scenarioState == STARTED) {
-                DrawCircle(
-                    GetScreenWidth() / 2,
-                    GetScreenHeight() / 2,
-                    2.0f,
-                    WHITE
-                );
+                DrawTexture(crosshairTexture.texture, 0, 0, WHITE);
             }
 
             Clay_RenderCommandArray hud = scenarioUi(metadata);
@@ -588,6 +588,7 @@ void loadLuaScenario(ScenarioMetadata metadata) {
 
 
 cleanup:
+    UnloadRenderTexture(crosshairTexture);
     sm_destroy(&targetMap);
     cvector_clear(targetIds);
     cvector_shrink_to_fit(targetIds);

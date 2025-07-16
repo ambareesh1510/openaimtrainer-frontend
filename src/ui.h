@@ -6,7 +6,7 @@
 
 #define CLAY_IMPLEMENTATION
 #include "clay/clay.h"
-#include "clay/clay_renderer_raylib.c"
+#include "clay_renderer_raylib.h"
 
 #include "ui_utils.h"
 #include "main_menu.h"
