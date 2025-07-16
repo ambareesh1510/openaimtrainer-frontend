@@ -33,11 +33,15 @@ int score = 0;
 
 double elapsedTime = 0.0;
 
+float shotCooldown = 0.0;
+
 struct {
     Vector3 initialPosition;
     Vector3 initialTarget;
     bool piercing;
     bool move;
+    bool automatic;
+    double shotDelay;
 } config;
 
 int loadConfig(lua_State *L) {
@@ -83,6 +87,14 @@ int loadConfig(lua_State *L) {
         lua_rawgeti(L, -1, 3);
         config.initialTarget.z = lua_tonumber(L, -1);
         lua_pop(L, 1);
+    lua_pop(L, 1);
+
+    lua_getfield(L, -1, "automatic");
+    config.automatic = lua_toboolean(L, -1);
+    lua_pop(L, 1);
+
+    lua_getfield(L, -1, "shotDelay");
+    config.shotDelay = lua_tonumber(L, -1);
     lua_pop(L, 1);
 
     return 0;
@@ -171,10 +183,25 @@ int getScore(lua_State *L) {
     return 1;
 }
 
-int setScore (lua_State *L) {
+int setScore(lua_State *L) {
     int newScore = luaL_checknumber(L, 1);
     score = newScore;
     return 0;
+}
+
+int getTime(lua_State *L) {
+    lua_pushnumber(L, elapsedTime);
+    return 1;
+}
+
+int getShotCooldown(lua_State *L) {
+    lua_pushnumber(L, shotCooldown);
+    return 1;
+}
+
+int setShotCooldown(lua_State *L) {
+    float newShotCooldown = luaL_checknumber(L, 1);
+    shotCooldown = newShotCooldown;
 }
 
 void initLua(lua_State *L) {
@@ -190,6 +217,11 @@ void initLua(lua_State *L) {
 
     lua_register(L, "getScore", getScore);
     lua_register(L, "setScore", setScore);
+
+    lua_register(L, "getTime", getTime);
+
+    lua_register(L, "getShotCooldown", getShotCooldown);
+    lua_register(L, "setShotCooldown", setShotCooldown);
 }
 
 int callLuaFunction(lua_State *L, char *function) {
@@ -297,10 +329,13 @@ Clay_RenderCommandArray scenarioUi(ScenarioMetadata metadata) {
                     .height = CLAY_SIZING_GROW(0)
                 },
                 .padding = { 16, 16, 16, 16 },
-                .childGap = 16
+                .childGap = 16,
+                .childAlignment = {
+                    .x = CLAY_ALIGN_X_CENTER,
+                },
+                .layoutDirection = CLAY_TOP_TO_BOTTOM,
             },
         }) {
-            hSpacer();
             CLAY({
                 .id = CLAY_ID("HUDTop"),
                 .layout = {
@@ -394,7 +429,30 @@ Clay_RenderCommandArray scenarioUi(ScenarioMetadata metadata) {
                     );
                 }
             }
-            hSpacer();
+            CLAY({
+                .layout = {
+                    .sizing = {
+                        .height = CLAY_SIZING_FIXED(15),
+                        .width = CLAY_SIZING_PERCENT(0.2),
+                    },
+                    .childAlignment = {
+                        .x = CLAY_ALIGN_X_LEFT,
+                    },
+                    .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                },
+                .backgroundColor = COLOR_GRAY,
+            }) {
+                float reloadBarPercent = FloatEquals(config.shotDelay, 0.0f) ? (1.0) : (1.0 - shotCooldown / config.shotDelay);
+                CLAY({
+                    .layout = {
+                        .sizing = {
+                            .height = CLAY_SIZING_GROW(0),
+                            .width = CLAY_SIZING_PERCENT(reloadBarPercent),
+                        },
+                    },
+                    .backgroundColor = COLOR_BLUE,
+                }) {}
+            }
         }
     }
     return Clay_EndLayout();
@@ -417,6 +475,7 @@ void loadLuaScenario(ScenarioMetadata metadata) {
     hitCount = 0;
     score = 0;
     elapsedTime = 0.0;
+    shotCooldown = 0.0f;
     scenarioState = AWAITING_START;
 
     lua_State *L = luaL_newstate();
@@ -486,6 +545,10 @@ void loadLuaScenario(ScenarioMetadata metadata) {
         }
         if (scenarioState == STARTED) {
             elapsedTime += GetFrameTime();
+            shotCooldown -= GetFrameTime();
+            if (shotCooldown < 0.0f) {
+                shotCooldown = 0.0f;
+            }
             if (elapsedTime >= metadata.time) {
                 valid = true;
                 break;
@@ -501,7 +564,11 @@ void loadLuaScenario(ScenarioMetadata metadata) {
             }
 
             RayCollision collision;
-            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+            bool canShoot = FloatEquals(shotCooldown, 0.0f) && (config.automatic
+                ? IsMouseButtonDown(MOUSE_BUTTON_LEFT)
+                : IsMouseButtonPressed(MOUSE_BUTTON_LEFT));
+            if (canShoot) {
+                shotCooldown = config.shotDelay;
                 if (callLuaFunction(L, "onShoot") != 0) {
                     goto cleanup;
                 }

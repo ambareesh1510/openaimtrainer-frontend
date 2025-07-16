@@ -3,6 +3,8 @@ config = {
     piercing = false;
     initialPosition = { 0., 2., 8. };
     initialTarget = { 0., 2., 0. };
+    automatic = false;
+    shotDelay = 0.0;
 }
 
 local square_side = 3 
