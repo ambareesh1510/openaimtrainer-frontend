@@ -1,7 +1,10 @@
 #ifndef SETTINGS_COMMON_H
 #define SETTINGS_COMMON_H
 
-float sensitivity = 0.5;
+#define SETTINGS_PATH "./settings"
+
+#define DEFAULT_SENSITIVITY 0.5
+float sensitivity = DEFAULT_SENSITIVITY;
 
 struct CrosshairConfig {
     bool centerDot;
@@ -122,6 +125,38 @@ void drawCrosshair(RenderTexture2D texture, Color clearColor) {
     }
 
     EndTextureMode();
+}
+
+#define SETTINGS_MAGIC "MAGIC12345"
+
+struct Settings {
+    char magic[sizeof(SETTINGS_MAGIC)];
+    float sensitivity;
+    CrosshairConfig crosshairConfig;
+};
+typedef struct Settings Settings;
+
+int loadSettings(char *path) {
+    int bytes;
+    Settings *s = (Settings *) LoadFileData(path, &bytes);
+    if (bytes != sizeof(*s)) {
+        return -1;
+    }
+    if (strcmp(s->magic, SETTINGS_MAGIC) != 0) {
+        return -1;
+    }
+    sensitivity = s->sensitivity;
+    currentCrosshairConfig = s->crosshairConfig;
+    return 0;
+}
+
+void saveSettings(char *path) {
+    Settings s = {
+        .magic = SETTINGS_MAGIC,
+        .sensitivity = sensitivity,
+        .crosshairConfig = currentCrosshairConfig,
+    };
+    SaveFileData(path, &s, sizeof(s));
 }
 
 #endif /* SETTINGS_COMMON_H */

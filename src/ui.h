@@ -50,7 +50,7 @@ void UpdateDrawFrame(Font* fonts)
         scrollbarData.mouseDown = false;
     }
 
-    Clay_UpdateScrollContainers(false, (Clay_Vector2) {mouseWheelX, mouseWheelY}, GetFrameTime());
+    Clay_UpdateScrollContainers(false, (Clay_Vector2) {mouseWheelX * 1.5, mouseWheelY * 1.5}, GetFrameTime());
     Clay_BeginLayout();
     if (uiState == MAIN_MENU) {
         renderMainMenu();

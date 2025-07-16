@@ -402,6 +402,10 @@ Clay_RenderCommandArray scenarioUi(ScenarioMetadata metadata) {
 
 RenderTexture2D crosshairTexture;
 void loadLuaScenario(ScenarioMetadata metadata) {
+    if (loadSettings(SETTINGS_PATH) != 0) {
+        fprintf(stderr, "Failed to load settings file upon starting scenario\n");
+        currentCrosshairConfig = (CrosshairConfig) DEFAULT_CROSSHAIR_CONFIG;
+    }
     bool valid = false;
     char *path = metadata.path;
     DisableCursor();

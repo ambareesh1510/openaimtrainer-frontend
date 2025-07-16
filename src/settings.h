@@ -12,7 +12,23 @@ void handleResetCrosshairSettings(Clay_ElementId elementId, Clay_PointerData poi
 
 void handleResetSensitivity(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
-        sensitivity = 0.5;
+        sensitivity = DEFAULT_SENSITIVITY;
+    }
+}
+
+void handleExitSettingsMenu(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        if (loadSettings(SETTINGS_PATH) != 0) {
+            fprintf(stderr, "Failed to load settings file upon exiting settings menu\n");
+            currentCrosshairConfig = (CrosshairConfig) DEFAULT_CROSSHAIR_CONFIG;
+        }
+        uiState = MAIN_MENU;
+    }
+}
+
+void handleSaveSettings(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        saveSettings(SETTINGS_PATH);
     }
 }
 
@@ -457,15 +473,34 @@ void renderSettingsMenu(void) {
         }
 
         CLAY({
-            .backgroundColor = Clay_Hovered()
-                ? COLOR_DARK_BLUE
-                : COLOR_LIGHT_GRAY,
             .layout = {
-                .padding = { 5, 5, 5, 5 },
+                .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                .childGap = 16,
             },
         }) {
-            Clay_OnHover(handleToMainMenu, 0);
-            CLAY_TEXT(CLAY_STRING("Back"), &hugeTextConfig);
+            CLAY({
+                .backgroundColor = Clay_Hovered()
+                    ? COLOR_DARK_BLUE
+                    : COLOR_LIGHT_GRAY,
+                .layout = {
+                    .padding = { 5, 5, 5, 5 },
+                },
+            }) {
+                Clay_OnHover(handleExitSettingsMenu, 0);
+                CLAY_TEXT(CLAY_STRING("Back"), &hugeTextConfig);
+            }
+
+            CLAY({
+                .backgroundColor = Clay_Hovered()
+                    ? COLOR_DARK_BLUE
+                    : COLOR_LIGHT_GRAY,
+                .layout = {
+                    .padding = { 5, 5, 5, 5 },
+                },
+            }) {
+                Clay_OnHover(handleSaveSettings, 0);
+                CLAY_TEXT(CLAY_STRING("Save"), &hugeTextConfig);
+            }
         }
     }
 }
