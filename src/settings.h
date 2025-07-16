@@ -4,6 +4,18 @@
 #include "ui_utils.h"
 #include "settings_common.h"
 
+void handleResetCrosshairSettings(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        currentCrosshairConfig = (CrosshairConfig) DEFAULT_CROSSHAIR_CONFIG;
+    }
+}
+
+void handleResetSensitivity(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        sensitivity = 0.5;
+    }
+}
+
 SliderData centerDotRadiusSliderData = {
     .progress = &currentCrosshairConfig.centerDotRadius,
     .id = 0,
@@ -51,6 +63,13 @@ SliderData outerLineGapSliderData = {
     .id = 6,
     .min = 0.0f,
     .max = 10.0f,
+};
+
+SliderData sensitivitySliderData = {
+    .progress = &sensitivity,
+    .id = 7,
+    .min = 0.01f,
+    .max = 2.0f,
 };
 
 void renderSettingsMenu(void) {
@@ -347,8 +366,8 @@ void renderSettingsMenu(void) {
                             .padding = { 5, 5, 5, 5 },
                         },
                     }) {
-                        Clay_OnHover(handleToMainMenu, 0);
-                        CLAY_TEXT(CLAY_STRING("Reset all crosshair settings to default"), &largeTextConfig);
+                        Clay_OnHover(handleResetCrosshairSettings, 0);
+                        CLAY_TEXT(CLAY_STRING("Reset all crosshair settings to default values"), &largeTextConfig);
                     }
                 }
 
@@ -379,19 +398,55 @@ void renderSettingsMenu(void) {
             .id = CLAY_ID("SensitivityContainer"),
             .layout = {
                 .sizing = {
-                    .width = CLAY_SIZING_GROW(0),
+                    .width = CLAY_SIZING_PERCENT(0.5),
                     // .height = CLAY_SIZING_GROW(0),
                 },
                 .layoutDirection = CLAY_TOP_TO_BOTTOM,
+                .childGap = 16,
             },
         }) {
-            CLAY_TEXT(CLAY_STRING("LKA:LKSJLK"), &largeTextConfig);
-            CLAY_TEXT(CLAY_STRING("LKA:LKSJLK"), &largeTextConfig);
-            CLAY_TEXT(CLAY_STRING("LKA:LKSJLK"), &largeTextConfig);
-            CLAY_TEXT(CLAY_STRING("LKA:LKSJLK"), &largeTextConfig);
-            CLAY_TEXT(CLAY_STRING("LKA:LKSJLK"), &largeTextConfig);
-            CLAY_TEXT(CLAY_STRING("LKA:LKSJLK"), &largeTextConfig);
-            CLAY_TEXT(CLAY_STRING("LKA:LKSJLK"), &largeTextConfig);
+            CLAY({
+                .layout = {
+                    .sizing = {
+                        .width = CLAY_SIZING_GROW(0),
+                    },
+                     .childAlignment = {.y = CLAY_ALIGN_Y_CENTER, },
+                    .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                    .childGap = 16,
+                },
+            }) {
+                CLAY({ .layout = { .sizing = { .width = CLAY_SIZING_PERCENT(0.3), }, }, }) {
+                    CLAY_TEXT(CLAY_STRING("Sensitivity"), &largeTextConfig);
+                }
+                CLAY({ .layout = { .sizing = { .width = CLAY_SIZING_PERCENT(0.7), }, .childGap = 16, .childAlignment = {.y = CLAY_ALIGN_Y_CENTER, }, }, }) {
+                    renderSlider(&sensitivitySliderData, 0.05);
+                    const char *sliderPercent = TextFormat("%.2f", sensitivity);
+                    CLAY_TEXT(CLAY_DYNSTR(sliderPercent), &largeTextConfig);
+                }
+            }
+
+            CLAY({
+                .layout = {
+                    .sizing = {
+                        .width = CLAY_SIZING_GROW(0),
+                    },
+                     .childAlignment = {.y = CLAY_ALIGN_Y_CENTER, },
+                    .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                    .childGap = 16,
+                },
+            }) {
+                CLAY({
+                    .backgroundColor = Clay_Hovered()
+                        ? COLOR_DARK_BLUE
+                        : COLOR_LIGHT_GRAY,
+                    .layout = {
+                        .padding = { 5, 5, 5, 5 },
+                    },
+                }) {
+                    Clay_OnHover(handleResetSensitivity, 0);
+                    CLAY_TEXT(CLAY_STRING("Reset sensitivity to default value"), &largeTextConfig);
+                }
+            }
         }
 
         CLAY({

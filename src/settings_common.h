@@ -1,7 +1,7 @@
 #ifndef SETTINGS_COMMON_H
 #define SETTINGS_COMMON_H
 
-float sensitivity;
+float sensitivity = 0.5;
 
 struct CrosshairConfig {
     bool centerDot;

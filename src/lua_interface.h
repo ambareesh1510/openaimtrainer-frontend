@@ -460,8 +460,8 @@ void loadLuaScenario(ScenarioMetadata metadata) {
         UpdateCameraPro(&camera,
             move,
             (Vector3) {
-                GetMouseDelta().x * 0.05f,
-                GetMouseDelta().y * 0.05f,
+                GetMouseDelta().x * sensitivity / 10.0f, 
+                GetMouseDelta().y * sensitivity / 10.0f,
                 0.0f
             },
             0.0f
