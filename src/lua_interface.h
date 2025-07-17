@@ -483,10 +483,12 @@ void loadLuaScenario(ScenarioMetadata metadata, int selectedDifficulty, char *se
 
     initLua(L);
 
-    lua_pushnumber(L, selectedDifficulty);
-    lua_setglobal(L, "difficultyIndex");
-    lua_pushstring(L, selectedDifficultyName);
-    lua_setglobal(L, "difficulty");
+    if (selectedDifficultyName != NULL) {
+        lua_pushnumber(L, selectedDifficulty);
+        lua_setglobal(L, "difficultyIndex");
+        lua_pushstring(L, selectedDifficultyName);
+        lua_setglobal(L, "difficulty");
+    }
 
     if (luaL_dofile(L, path)) {
         fprintf(stderr, "Lua error: %s\n", lua_tostring(L, -1));

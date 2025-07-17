@@ -357,10 +357,14 @@ void handleReloadScenarios(Clay_ElementId elementId, Clay_PointerData pointerInf
 
 void handleStartScenario(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        char *difficultyName = NULL;
+        if (fileMetadata[selectedScenarioIndex].numDifficulties != 0) {
+            difficultyName = fileMetadata[selectedScenarioIndex].difficultyData[selectedDifficulty].difficultyName;
+        }
         loadLuaScenario(
             fileMetadata[selectedScenarioIndex],
             selectedDifficulty,
-            fileMetadata[selectedScenarioIndex].difficultyData[selectedDifficulty].difficultyName
+            difficultyName
         );
         if (scenarioResults.valid) {
             uiState = POST_SCENARIO;
