@@ -4,11 +4,23 @@
 #include "lua_interface.h"
 
 int selectedScenarioIndex = -1;
+int selectedDifficulty = -1;
+
 void handleSelectScenario(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         selectedScenarioIndex = (int) userData;
+        selectedDifficulty = 0;
+        // if (selectedScenarioIndex != (int) userData) {
+        // }
     }
 }
+
+void handleSelectDifficulty(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        selectedDifficulty = (int) userData;
+    }
+}
+
 
 cvector_vector_type(ScenarioMetadata) fileMetadata = NULL;
 
@@ -136,11 +148,42 @@ void RenderScenarioCard(int index) {
     }
 }
 
+int getHexDigit(char c) {
+    if ('0' <= c && c <= '9') {
+        return c - '0';
+    } else if ('a' <= c && c <= 'f') {
+        return 10 + c - 'a';
+    } else {
+        return -1;
+    }
+}
+
+Clay_Color convertHexBufferToColor(const char buf[6]) {
+    int rgb[3];
+    for (size_t i = 0; i <= 4; i += 2) {
+        char b1 = buf[i], b2 = buf[i + 1];
+        int v1 = getHexDigit(b1), v2 = getHexDigit(b2);
+        if (v1 == -1 || v2 == -1) {
+            break;
+        }
+        rgb[i / 2] = v1 * 16 + v2;
+    }
+    Clay_Color color = {
+        rgb[0],
+        rgb[1],
+        rgb[2],
+        255
+    };
+    return color;
+}
+
 
 void findScenarios() {
     selectedScenarioIndex = -1;
     for (size_t i = 0; i < cvector_size(fileMetadata); i++) {
         free(fileMetadata[i].path);
+        free(fileMetadata[i].difficultyData->difficultyName);
+        free(fileMetadata[i].difficultyData);
     }
     cvector_clear(fileMetadata);
 
@@ -194,6 +237,7 @@ void findScenarios() {
         toml_datum_t author = toml_seek(tomlParseResult.toptab, "author");
         toml_datum_t description = toml_seek(tomlParseResult.toptab, "description");
         toml_datum_t time = toml_seek(tomlParseResult.toptab, "time");
+        toml_datum_t difficulties = toml_seek(tomlParseResult.toptab, "difficulties");
 
         // TODO: improve error handling
         if (name.type != TOML_STRING) {
@@ -224,12 +268,71 @@ void findScenarios() {
             goto cleanup;
         }
 
+        ScenarioDifficultyData *difficultyData;
+
+        if (difficulties.type == TOML_UNKNOWN) {
+            difficultyData = NULL;
+        } else if (difficulties.type != TOML_ARRAY) {
+            fprintf(stderr, "Invalid key `difficulties`!");
+            fail = true;
+            toml_free(tomlParseResult);
+            goto cleanup;
+        }
+
+        // We know that difficulty data is an array
+        int difficultyDataFailureIndex = -1;
+        difficultyData = malloc(sizeof(*difficultyData) * difficulties.u.arr.size);
+        int numDifficulties = difficulties.u.arr.size;
+        for (size_t i = 0; i < numDifficulties; i++) {
+            toml_datum_t difficultyElem = difficulties.u.arr.elem[i];
+            if (difficultyElem.type != TOML_ARRAY || difficultyElem.u.arr.size != 3) {
+                difficultyDataFailureIndex = i;
+                break;
+            }
+            toml_datum_t difficultyName = difficultyElem.u.arr.elem[0];
+            toml_datum_t difficultyForegroundColor = difficultyElem.u.arr.elem[1];
+            toml_datum_t difficultyBackgroundColor = difficultyElem.u.arr.elem[2];
+            if (
+                difficultyName.type != TOML_STRING
+                || difficultyForegroundColor.type != TOML_STRING
+                || difficultyBackgroundColor.type != TOML_STRING
+            ) {
+                difficultyDataFailureIndex = i;
+                break;
+            }
+
+            Clay_Color fg = convertHexBufferToColor(difficultyForegroundColor.u.s);
+            Clay_Color bg = convertHexBufferToColor(difficultyBackgroundColor.u.s);
+            char *difficultyNameBuffer = malloc(strlen(difficultyName.u.s) + 1);
+            strcpy(difficultyNameBuffer, difficultyName.u.s);
+            difficultyData[i] = (ScenarioDifficultyData) {
+                .difficultyName = difficultyNameBuffer,
+                .foregroundColor = fg,
+                .backgroundColor = bg,
+            };
+        }
+
+        // TODO: test this failure condition
+        if (difficultyDataFailureIndex >= 0) {
+            for (int i = 0; i < difficultyDataFailureIndex; i++) {
+                free(difficultyData[i].difficultyName);
+            }
+            free(difficultyData);
+            difficultyData = NULL;
+        }
+
+        if (difficultyData == NULL) {
+            numDifficulties = 0;
+        }
+
         ScenarioMetadata metadata = {
             .path = luaFilePath,
             .name = name.u.s,
             .author = author.u.s,
             .description = description.u.s,
-            .time = time.u.fp64
+            .time = time.u.fp64,
+            .difficultyData = difficultyData,
+            .numDifficulties = numDifficulties,
         };
 
         cvector_push_back(fileMetadata, metadata);
@@ -254,7 +357,11 @@ void handleReloadScenarios(Clay_ElementId elementId, Clay_PointerData pointerInf
 
 void handleStartScenario(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
-        loadLuaScenario(fileMetadata[selectedScenarioIndex]);
+        loadLuaScenario(
+            fileMetadata[selectedScenarioIndex],
+            selectedDifficulty,
+            fileMetadata[selectedScenarioIndex].difficultyData[selectedDifficulty].difficultyName
+        );
         if (scenarioResults.valid) {
             uiState = POST_SCENARIO;
         } else {
@@ -384,6 +491,37 @@ void renderScenarioSelectScreen(void) {
                 }) {
                 CLAY_TEXT(CLAY_STRING("Description: "), CLAY_TEXT_CONFIG(boldTextConfig));
                 CLAY_TEXT(CLAY_DYNSTR(s.description), CLAY_TEXT_CONFIG(normalTextConfig));
+                }
+                CLAY({
+                    .layout = {
+                        .layoutDirection = CLAY_TOP_TO_BOTTOM,
+                        // .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                        .childGap = 16,
+                    },
+                }) {
+                    for (size_t i = 0; i < s.numDifficulties; i++) {
+                        ScenarioDifficultyData difficultyData = s.difficultyData[i];
+                        Clay_BorderElementConfig borderConfig = { 0 };
+                        if (i == selectedDifficulty) {
+                            borderConfig = (Clay_BorderElementConfig) {
+                                .width = { 2, 2, 2, 2 },
+                                .color = COLOR_WHITE,
+                            };
+                        }
+                        CLAY({
+                            .layout = {
+                                .padding = { 5, 5, 5, 5 },
+                            },
+                            .border = borderConfig,
+                            .cornerRadius = { 5, 5, 5, 5 },
+                            .backgroundColor = difficultyData.backgroundColor,
+                        }) {
+                            Clay_OnHover(handleSelectDifficulty, i);
+                            Clay_TextElementConfig textConfig = boldTextConfig;
+                            textConfig.textColor = difficultyData.foregroundColor;
+                            CLAY_TEXT(CLAY_DYNSTR(difficultyData.difficultyName), CLAY_TEXT_CONFIG(textConfig));
+                        }
+                    }
                 }
                 CLAY({
                     .id = CLAY_ID("RightSpacer"),

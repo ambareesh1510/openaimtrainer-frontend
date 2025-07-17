@@ -19,6 +19,13 @@ struct {
 } scenarioResults;
 
 // TODO: move this to a more appropriate place
+struct ScenarioDifficultyData {
+    char *difficultyName;
+    Clay_Color foregroundColor;
+    Clay_Color backgroundColor;
+};
+typedef struct ScenarioDifficultyData ScenarioDifficultyData;
+
 struct ScenarioMetadata {
     char *path;
     const char *name;
@@ -28,7 +35,8 @@ struct ScenarioMetadata {
     double titleOffset;
     double authorOffset;
     double timeOffset;
-
+    ScenarioDifficultyData *difficultyData;
+    int numDifficulties;
 };
 typedef struct ScenarioMetadata ScenarioMetadata;
 

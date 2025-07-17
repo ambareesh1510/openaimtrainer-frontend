@@ -459,7 +459,7 @@ Clay_RenderCommandArray scenarioUi(ScenarioMetadata metadata) {
 }
 
 RenderTexture2D crosshairTexture;
-void loadLuaScenario(ScenarioMetadata metadata) {
+void loadLuaScenario(ScenarioMetadata metadata, int selectedDifficulty, char *selectedDifficultyName) {
     if (loadSettings(SETTINGS_PATH) != 0) {
         fprintf(stderr, "Failed to load settings file upon starting scenario\n");
         currentCrosshairConfig = (CrosshairConfig) DEFAULT_CROSSHAIR_CONFIG;
@@ -482,6 +482,11 @@ void loadLuaScenario(ScenarioMetadata metadata) {
     luaL_openlibs(L);
 
     initLua(L);
+
+    lua_pushnumber(L, selectedDifficulty);
+    lua_setglobal(L, "difficultyIndex");
+    lua_pushstring(L, selectedDifficultyName);
+    lua_setglobal(L, "difficulty");
 
     if (luaL_dofile(L, path)) {
         fprintf(stderr, "Lua error: %s\n", lua_tostring(L, -1));
