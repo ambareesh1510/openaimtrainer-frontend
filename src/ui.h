@@ -56,10 +56,19 @@ void UpdateDrawFrame(Font* fonts)
         renderMainMenu();
     } else if (uiState == SCENARIO_SELECT) {
         renderScenarioSelectScreen();
+        if (IsKeyPressed(KEY_ESCAPE)) {
+            uiState = MAIN_MENU;
+        }
     } else if (uiState == SETTINGS) {
         renderSettingsMenu();
+        if (IsKeyPressed(KEY_ESCAPE)) {
+            uiState = MAIN_MENU;
+        }
     } else if (uiState == POST_SCENARIO) {
         renderPostScenario();
+        if (IsKeyPressed(KEY_ESCAPE)) {
+            uiState = MAIN_MENU;
+        }
     }
     Clay_RenderCommandArray renderCommands = Clay_EndLayout();
     BeginDrawing();
