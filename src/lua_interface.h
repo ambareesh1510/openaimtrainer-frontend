@@ -202,6 +202,31 @@ int getShotCooldown(lua_State *L) {
 int setShotCooldown(lua_State *L) {
     float newShotCooldown = luaL_checknumber(L, 1);
     shotCooldown = newShotCooldown;
+    return 0;
+}
+
+struct ScenarioUserInfo {
+    char *key;
+    char *value;
+};
+typedef struct ScenarioUserInfo ScenarioUserInfo;
+
+cvector_vector_type(ScenarioUserInfo) scenarioUserInfoList = NULL;
+
+int addUserInfo(lua_State *L) {
+    size_t keySize, valueSize;
+    const char *key = lua_tolstring(L, 1, &keySize);
+    const char *value = lua_tolstring(L, 2, &valueSize);
+    char *keyCopy = malloc(keySize + 1);
+    strcpy(keyCopy, key);
+    char *valueCopy = malloc(valueSize + 1);
+    strcpy(valueCopy, value);
+    ScenarioUserInfo newUserInfo = {
+        .key = keyCopy,
+        .value = valueCopy,
+    };
+    cvector_push_back(scenarioUserInfoList, newUserInfo);
+    return 0;
 }
 
 void initLua(lua_State *L) {
@@ -222,6 +247,8 @@ void initLua(lua_State *L) {
 
     lua_register(L, "getShotCooldown", getShotCooldown);
     lua_register(L, "setShotCooldown", setShotCooldown);
+
+    lua_register(L, "addUserInfo", addUserInfo);
 }
 
 int callLuaFunction(lua_State *L, char *function) {
@@ -453,6 +480,52 @@ Clay_RenderCommandArray scenarioUi(ScenarioMetadata metadata) {
                     .backgroundColor = COLOR_BLUE,
                 }) {}
             }
+            CLAY({
+                .layout = {
+                    .sizing = {
+                        .height = CLAY_SIZING_GROW(0),
+                    },
+                },
+            }) {}
+            CLAY({
+                .id = CLAY_ID("HUDBottom"),
+                .layout = {
+                    .sizing = {
+                        .width = CLAY_SIZING_GROW(0),
+                        .height = CLAY_SIZING_FIT(0),
+                    },
+                    .padding = { 5, 5, 5, 5 },
+                    .childAlignment = {
+                        .x = CLAY_ALIGN_X_RIGHT,
+                    },
+                },
+            }) {
+                for (size_t i = 0; i < cvector_size(scenarioUserInfoList); i++) {
+                    CLAY({
+                        .layout = {
+                            .sizing = {
+                                .width = CLAY_SIZING_FIT(150),
+                                .height = CLAY_SIZING_GROW(0),
+                            },
+                            .childAlignment = {
+                                .x = CLAY_ALIGN_X_CENTER,
+                            },
+                            .layoutDirection = CLAY_TOP_TO_BOTTOM,
+                            .padding = { 5, 5, 5, 5 },
+                        },
+                        .backgroundColor = {255, 255, 255, 35},
+                    }) {
+                        CLAY_TEXT(
+                            CLAY_DYNSTR(scenarioUserInfoList[i].key),
+                            CLAY_TEXT_CONFIG(normalTextConfig)
+                        );
+                        CLAY_TEXT(
+                            CLAY_DYNSTR(scenarioUserInfoList[i].value),
+                            CLAY_TEXT_CONFIG(largeTextConfig)
+                        );
+                    }
+                }
+            }
         }
     }
     return Clay_EndLayout();
@@ -517,6 +590,12 @@ void loadLuaScenario(ScenarioMetadata metadata, int selectedDifficulty, char *se
     // TODO: handle WindowShouldClose() separately (currently only exits
     // the scenario)
     while (!(WindowShouldClose() || IsKeyPressed(KEY_ESCAPE))) {
+        for (size_t i = 0; i < cvector_size(scenarioUserInfoList); i++) {
+            free(scenarioUserInfoList[i].key);
+            free(scenarioUserInfoList[i].value);
+        }
+        cvector_clear(scenarioUserInfoList);
+
         Vector3 move = { 0 };
         if (config.move && scenarioState == STARTED) {
             move = (Vector3) {
