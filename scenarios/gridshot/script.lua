@@ -4,7 +4,7 @@ config = {
     initialPosition = { 0., 2., 8. };
     initialTarget = { 0., 2., 0. };
     automatic = false;
-    shotDelay = 0.0;
+    shotDelay = 1.0;
 }
 
 local square_side = 3 
@@ -37,7 +37,16 @@ function init()
     end
 end
 
+local ammo = 6
+local reloading = false
 function update()
+    if ammo == 0 then
+        if getShotCooldown() == 0 then
+            ammo = 6
+        end
+    end
+    addUserInfo("Ammo", string.format("%d", ammo))
+    addUserInfo("Remaining", string.format("%.2f", totalTime - getTime()))
 end
 
 function onHit(id)
@@ -54,4 +63,10 @@ end
 
 function onShoot()
     incrementShotCount()
+    if ammo ~= 0 then
+        ammo = ammo - 1
+    end
+    if ammo ~= 0 then
+        setShotCooldown(0.0)
+    end
 end

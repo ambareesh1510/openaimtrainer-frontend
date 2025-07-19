@@ -18,6 +18,9 @@
 #include "shader.h"
 #include "settings_common.h"
 
+// TODO: consider prefixing lua functions and globals to avoid namespace pollution
+// TODO: version the API (make it a required field in the toml config)
+
 Slotmap targetMap;
 
 struct TargetData {
@@ -562,6 +565,9 @@ void loadLuaScenario(ScenarioMetadata metadata, int selectedDifficulty, char *se
         lua_pushstring(L, selectedDifficultyName);
         lua_setglobal(L, "difficulty");
     }
+
+    lua_pushnumber(L, metadata.time);
+    lua_setglobal(L, "totalTime");
 
     if (luaL_dofile(L, path)) {
         fprintf(stderr, "Lua error: %s\n", lua_tostring(L, -1));

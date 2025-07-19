@@ -56,6 +56,8 @@ void UpdateDrawFrame(Font* fonts)
         renderMainMenu();
     } else if (uiState == SCENARIO_SELECT) {
         renderScenarioSelectScreen();
+        // TODO: when exiting a scenario using ESC, this causes it to go
+        //  directly to main menu
         if (IsKeyPressed(KEY_ESCAPE)) {
             uiState = MAIN_MENU;
         }

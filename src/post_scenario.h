@@ -50,8 +50,20 @@ void renderPostScenario(void) {
                 .padding = { 5, 5, 5, 5 },
             },
         }) {
+            Clay_OnHover(handleStartScenario, 0);
+            CLAY_TEXT(CLAY_STRING("Replay scenario"), &largeTextConfig);
+        }
+
+        CLAY({
+            .backgroundColor = Clay_Hovered()
+                ? COLOR_DARK_BLUE
+                : COLOR_LIGHT_GRAY,
+            .layout = {
+                .padding = { 5, 5, 5, 5 },
+            },
+        }) {
             Clay_OnHover(handleToScenarioSelect, 0);
-            CLAY_TEXT(CLAY_STRING("Scenario Select"), &largeTextConfig);
+            CLAY_TEXT(CLAY_STRING("Scenario select"), &largeTextConfig);
         }
 
         CLAY({
