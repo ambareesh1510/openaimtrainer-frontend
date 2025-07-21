@@ -1,6 +1,8 @@
 #ifndef SCENARIO_SELECT_H
 #define SCENARIO_SELECT_H
 
+#include <errno.h>
+
 #include "lua_interface.h"
 
 int selectedScenarioIndex = -1;
@@ -177,6 +179,36 @@ Clay_Color convertHexBufferToColor(const char buf[6]) {
     return color;
 }
 
+LuaApiVersion parseVersion(const char *versionString) {
+    size_t versionLen = strlen(versionString);
+    char *buf = malloc(versionLen + 1);
+    strcpy(buf, versionString);
+    char *i = buf;
+    while (*i != '\0') {
+        if (*i == '.') {
+            *i == '\0';
+            i++;
+            break;
+        }
+        i++;
+    }
+    LuaApiVersion version;
+    errno = 0;
+    int major = strtol(buf, NULL, 0);
+    if (errno == EINVAL) {
+        goto bail;
+    }
+
+    int minor = strtol(i, NULL, 0);
+    if (errno == EINVAL) {
+        goto bail;
+    }
+    version.major = major;
+    version.minor = minor;
+bail:
+    free(buf);
+    return version;
+}
 
 void findScenarios() {
     selectedScenarioIndex = -1;
@@ -238,6 +270,7 @@ void findScenarios() {
         toml_datum_t description = toml_seek(tomlParseResult.toptab, "description");
         toml_datum_t time = toml_seek(tomlParseResult.toptab, "time");
         toml_datum_t difficulties = toml_seek(tomlParseResult.toptab, "difficulties");
+        toml_datum_t version = toml_seek(tomlParseResult.toptab, "version");
 
         // TODO: improve error handling
         if (name.type != TOML_STRING) {
@@ -263,6 +296,13 @@ void findScenarios() {
 
         if (time.type != TOML_FP64) {
             fprintf(stderr, "Invalid key `time`!");
+            fail = true;
+            toml_free(tomlParseResult);
+            goto cleanup;
+        }
+
+        if (version.type != TOML_STRING) {
+            fprintf(stderr, "Invalid key `version`!");
             fail = true;
             toml_free(tomlParseResult);
             goto cleanup;
@@ -325,6 +365,8 @@ void findScenarios() {
             numDifficulties = 0;
         }
 
+        LuaApiVersion apiVersion = parseVersion(version.u.s);
+
         ScenarioMetadata metadata = {
             .path = luaFilePath,
             .name = name.u.s,
@@ -333,6 +375,7 @@ void findScenarios() {
             .time = time.u.fp64,
             .difficultyData = difficultyData,
             .numDifficulties = numDifficulties,
+            .version = apiVersion,
         };
 
         cvector_push_back(fileMetadata, metadata);

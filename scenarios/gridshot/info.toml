@@ -2,4 +2,5 @@ name = "Gridshot [3x3]"
 author = "Ambareesh Shyam Sundar"
 description = "Shoot in grid"
 time = 45.0
+version = "1.0"
 
