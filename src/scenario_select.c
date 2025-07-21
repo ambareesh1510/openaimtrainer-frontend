@@ -265,7 +265,7 @@ void findScenarios() {
         toml_datum_t description = toml_seek(tomlParseResult.toptab, "description");
         toml_datum_t time = toml_seek(tomlParseResult.toptab, "time");
         toml_datum_t difficulties = toml_seek(tomlParseResult.toptab, "difficulties");
-        toml_datum_t version = toml_seek(tomlParseResult.toptab, "version");
+        toml_datum_t apiVersion = toml_seek(tomlParseResult.toptab, "api_version");
 
         // TODO: improve error handling
         if (name.type != TOML_STRING) {
@@ -296,8 +296,8 @@ void findScenarios() {
             goto cleanup;
         }
 
-        if (version.type != TOML_STRING) {
-            fprintf(stderr, "Invalid key `version`!");
+        if (apiVersion.type != TOML_STRING) {
+            fprintf(stderr, "Invalid key `api_version`!");
             fail = true;
             toml_free(tomlParseResult);
             goto cleanup;
@@ -360,7 +360,7 @@ void findScenarios() {
             numDifficulties = 0;
         }
 
-        LuaApiVersion apiVersion = parseVersion(version.u.s);
+        LuaApiVersion apiVersion_ = parseVersion(apiVersion.u.s);
 
         ScenarioMetadata metadata = {
             .path = luaFilePath,
@@ -370,7 +370,7 @@ void findScenarios() {
             .time = time.u.fp64,
             .difficultyData = difficultyData,
             .numDifficulties = numDifficulties,
-            .version = apiVersion,
+            .apiVersion = apiVersion_,
         };
 
         cvector_push_back(fileMetadata, metadata);

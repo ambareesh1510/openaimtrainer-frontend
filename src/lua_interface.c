@@ -320,7 +320,7 @@ Clay_RenderCommandArray scenarioUi(ScenarioMetadata metadata) {
 RenderTexture2D crosshairTexture = { 0 };
 
 int loadConfig(ScenarioMetadata metadata, lua_State *L) {
-    LuaApiVersion version = metadata.version;
+    LuaApiVersion version = metadata.apiVersion;
     if (version.major == 1 && version.minor == 0) {
         v1_0_Config c;
         if (v1_0_loadConfig(L, &c) != 0) {

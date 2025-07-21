@@ -49,7 +49,7 @@ struct ScenarioMetadata {
     double timeOffset;
     ScenarioDifficultyData *difficultyData;
     int numDifficulties;
-    LuaApiVersion version;
+    LuaApiVersion apiVersion;
 };
 typedef struct ScenarioMetadata ScenarioMetadata;
 
