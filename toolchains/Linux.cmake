@@ -1,3 +1,4 @@
 add_compile_definitions(_GLFW_X11)
+add_compile_definitions(LUA_USE_POSIX)
 set(PRIVATE_PLATFORM_SPECIFIC_LIBRARIES "")
 set(PUBLIC_PLATFORM_SPECIFIC_LIBRARIES "")
