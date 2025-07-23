@@ -213,7 +213,9 @@ void findScenarios() {
     selectedScenarioIndex = -1;
     for (size_t i = 0; i < cvector_size(fileMetadata); i++) {
         free(fileMetadata[i].path);
-        free(fileMetadata[i].difficultyData->difficultyName);
+        for (size_t j = 0; j < fileMetadata[i].numDifficulties; j++) {
+            free(fileMetadata[i].difficultyData[j].difficultyName);
+        }
         free(fileMetadata[i].difficultyData);
     }
     cvector_clear(fileMetadata);
