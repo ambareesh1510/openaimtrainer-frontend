@@ -1,6 +1,5 @@
 #include "lua_interface.h"
 #include "clay_renderer_raylib.h"
-#include "lato.h"
 #include "save_scores.h"
 
 Slotmap targetMap = { 0 };

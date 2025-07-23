@@ -13,8 +13,6 @@
 #include "scenario_select.h"
 #include "post_scenario.h"
 #include "lua_interface.h"
-#include "lato.h"
-
 
 void UpdateDrawFrame(Font* fonts);
 

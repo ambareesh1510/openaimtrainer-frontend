@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-#include "lato.h"
+#include "lato/lato.h"
 #include "settings_common.h"
 #include "clay_renderer_raylib.h"
 
