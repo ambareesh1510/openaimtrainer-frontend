@@ -21,9 +21,10 @@ typedef struct ScoreSample ScoreSample;
 
 void saveScore(ScenarioMetadata metadata, SavedScore savedScore);
 
-extern bool scoresModified;
+extern bool savedScoresModified;
 extern cvector_vector_type(SavedScore) scoreFiles;
 
+extern bool scenarioScoresModified;
 extern cvector_vector_type(ScoreSample) scoreSamples;
 
 void loadSavedScores(ScenarioMetadata metadata);

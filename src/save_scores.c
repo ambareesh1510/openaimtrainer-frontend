@@ -4,9 +4,10 @@
 
 #include "shader.h"
 
-bool scoresModified = false;
+bool savedScoresModified = false;
 cvector_vector_type(SavedScore) scoreFiles = NULL;
 
+bool scenarioScoresModified = false;
 cvector_vector_type(ScoreSample) scoreSamples = NULL;
 
 void saveScore(ScenarioMetadata metadata, SavedScore savedScore) {
@@ -59,7 +60,7 @@ bail_loop:
     }
     UnloadDirectoryFiles(scoreFileList);
     qsort(scoreFiles, cvector_size(scoreFiles), sizeof(SavedScore), compareSavedScores);
-    scoresModified = true;
+    savedScoresModified = true;
 }
 
 void drawGraph(
@@ -187,13 +188,20 @@ void drawGraph(
     int maxTime = scoreFiles[cvector_size(scoreFiles) - 1].time;
 
     int minScore = INT_MAX, maxScore = 0;
-    for (size_t i = 0; i < cvector_size(scoreFiles); i++) {
-        minScore = MIN(scoreFiles[i].score, minScore);
-        maxScore = MAX(scoreFiles[i].score, maxScore);
+    if (type == DRAW_PROGRESSION_GRAPH) {
+        for (size_t i = 0; i < cvector_size(scoreFiles); i++) {
+            minScore = MIN(scoreFiles[i].score, minScore);
+            maxScore = MAX(scoreFiles[i].score, maxScore);
+        }
+    } else if (type == DRAW_SCENARIO_GRAPH) {
+        for (size_t i = 0; i < cvector_size(scoreSamples); i++) {
+            minScore = MIN(scoreSamples[i].score, minScore);
+            maxScore = MAX(scoreSamples[i].score, maxScore);
+        }
     }
 
     for (size_t i = 0; i <= numSubdivisions; i++) {
-        const char *textLeft = TextFormat("%.1f", (maxScore * (float) i / numSubdivisions));
+        const char *textLeft = TextFormat("%.1f", (minScore + (maxScore - minScore) * (float) i / numSubdivisions));
         const char *textRight = TextFormat("%.0f", 100.0f * i / numSubdivisions);
         Vector2 textSize = MeasureTextEx(font, textLeft, fontSize, spacing);
         DrawTextEx(

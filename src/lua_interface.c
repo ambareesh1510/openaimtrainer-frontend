@@ -359,6 +359,7 @@ void loadLuaScenario(ScenarioMetadata metadata, int selectedDifficulty, char *se
     shotCooldown = 0.0f;
     scenarioState = AWAITING_START;
     cvector_clear(scoreSamples);
+    cvector_push_back(scoreSamples, ((ScoreSample) { .score = 0, .accuracy = 100.0f }));
 
     lua_State *L = luaL_newstate();
     luaL_openlibs(L);
@@ -442,7 +443,8 @@ void loadLuaScenario(ScenarioMetadata metadata, int selectedDifficulty, char *se
             }
         }
         if (scenarioState == STARTED) {
-            if ((int) elapsedTime > cvector_size(scoreSamples)) {
+            elapsedTime += GetFrameTime();
+            if ((int) elapsedTime > cvector_size(scoreSamples) - 1) {
                 ScoreSample s;
                 s.score = score;
                 if (shotCount == 0) {
@@ -451,12 +453,14 @@ void loadLuaScenario(ScenarioMetadata metadata, int selectedDifficulty, char *se
                     s.accuracy = 100.0f * hitCount / shotCount;
                 }
                 cvector_push_back(scoreSamples, s);
+                scenarioScoresModified = true;
             }
-            elapsedTime += GetFrameTime();
+
             shotCooldown -= GetFrameTime();
             if (shotCooldown < 0.0f) {
                 shotCooldown = 0.0f;
             }
+
             if (elapsedTime >= metadata.time) {
                 valid = true;
                 break;
