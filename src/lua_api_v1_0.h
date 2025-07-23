@@ -18,6 +18,7 @@ struct v1_0_Config {
     Vector3 initialTarget;
     bool piercing;
     bool move;
+    Rectangle moveBoundingBox;
     bool automatic;
     double shotDelay;
 };

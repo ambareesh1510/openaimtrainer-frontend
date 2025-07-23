@@ -21,7 +21,6 @@
 #include "lua_api_v1_0.h"
 
 // TODO: consider prefixing lua functions and globals to avoid namespace pollution
-// TODO: version the API (make it a required field in the toml config)
 
 extern Slotmap targetMap;
 
@@ -45,6 +44,7 @@ struct ScenarioConfig {
     Vector3 initialTarget;
     bool piercing;
     bool move;
+    Rectangle moveBoundingBox;
     bool automatic;
     double shotDelay;
 };

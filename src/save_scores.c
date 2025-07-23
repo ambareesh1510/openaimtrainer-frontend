@@ -26,8 +26,11 @@ void saveScore(ScenarioMetadata metadata, SavedScore savedScore) {
     char *scriptData = LoadFileData(metadata.path, &scriptDataSize);
     int infoDataSize;
     char *infoData = LoadFileData(TextFormat("%s/info.toml", scenarioDirPath), &infoDataSize);
-    unsigned int *scriptChecksum = ComputeMD5(scriptData, scriptDataSize);
-    unsigned int *infoChecksum = ComputeMD5(infoData, infoDataSize);
+    // TODO: redundant memcpy
+    unsigned int scriptChecksum[4];
+    unsigned int infoChecksum[4];
+    memcpy(scriptChecksum, ComputeMD5(scriptData, scriptDataSize), 4 * sizeof(unsigned int));
+    memcpy(infoChecksum, ComputeMD5(infoData, infoDataSize), 4 * sizeof(unsigned int));
 
     memcpy(savedScore.scriptChecksum, scriptChecksum, 4 * sizeof(unsigned int));
     memcpy(savedScore.infoChecksum, infoChecksum, 4 * sizeof(unsigned int));
@@ -72,8 +75,10 @@ void loadSavedScores(ScenarioMetadata metadata) {
     char *scriptData = LoadFileData(metadata.path, &scriptDataSize);
     int infoDataSize;
     char *infoData = LoadFileData(TextFormat("%s/info.toml", scenarioDirPath), &infoDataSize);
-    unsigned int *scriptChecksum = ComputeMD5(scriptData, scriptDataSize);
-    unsigned int *infoChecksum = ComputeMD5(infoData, infoDataSize);
+    unsigned int scriptChecksum[4];
+    unsigned int infoChecksum[4];
+    memcpy(scriptChecksum, ComputeMD5(scriptData, scriptDataSize), 4 * sizeof(unsigned int));
+    memcpy(infoChecksum, ComputeMD5(infoData, infoDataSize), 4 * sizeof(unsigned int));
     UnloadFileData(scriptData);
     UnloadFileData(infoData);
 

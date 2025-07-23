@@ -329,7 +329,8 @@ int loadConfig(ScenarioMetadata metadata, lua_State *L) {
         config.initialPosition = c.initialPosition;
         config.initialTarget = c.initialTarget;
         config.piercing = c.piercing;
-        config.move  = c.move;
+        config.move = c.move;
+        config.moveBoundingBox = c.moveBoundingBox;
         config.automatic = c.automatic;
         config.shotDelay = c.shotDelay;
     } else {
@@ -408,6 +409,7 @@ void loadLuaScenario(ScenarioMetadata metadata, int selectedDifficulty, char *se
         }
         cvector_clear(scenarioUserInfoList);
 
+        // TODO: should this use deltaTime?
         Vector3 move = { 0 };
         if (config.move && scenarioState == STARTED) {
             move = (Vector3) {
@@ -427,7 +429,25 @@ void loadLuaScenario(ScenarioMetadata metadata, int selectedDifficulty, char *se
             },
             0.0f
         );
+        float clampedX = fmin(
+            fmax(
+                camera.position.x,
+                config.moveBoundingBox.x
+            ),
+            config.moveBoundingBox.x + config.moveBoundingBox.width
+        );
+        float clampedZ = fmin(
+            fmax(
+                camera.position.z,
+                config.moveBoundingBox.y
+            ),
+            config.moveBoundingBox.y + config.moveBoundingBox.height
+        );
 
+        camera.target.x += (clampedX - camera.position.x);
+        camera.target.z += (clampedZ - camera.position.z);
+        camera.position.x = clampedX;
+        camera.position.z = clampedZ;
 
         if (scenarioState == AWAITING_START) {
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {

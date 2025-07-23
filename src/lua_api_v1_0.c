@@ -1,5 +1,7 @@
 #include "lua_api_v1_0.h"
 
+#include <float.h>
+
 int v1_0_loadConfig(lua_State *L, v1_0_Config *v1_0_config) {
     lua_getglobal(L, "config");
     
@@ -15,6 +17,39 @@ int v1_0_loadConfig(lua_State *L, v1_0_Config *v1_0_config) {
 
     lua_getfield(L, -1, "move");
     v1_0_config->move = lua_toboolean(L, -1);
+    lua_pop(L, 1);
+
+    lua_getfield(L, -1, "moveBoundingBox");
+    if (lua_isnil(L, -1)) {
+        v1_0_config->moveBoundingBox = (Rectangle) {
+            .x = -100000.0f,
+            .y = -100000.0f,
+            .width = 200000.0f,
+            .height = 200000.0f,
+        };
+    } else {
+        int cx, cy, w, h;
+        lua_rawgeti(L, -1, 1);
+        cx = lua_tonumber(L, -1);
+        lua_pop(L, 1);
+
+        lua_rawgeti(L, -1, 2);
+        cy = lua_tonumber(L, -1);
+        lua_pop(L, 1);
+
+        lua_rawgeti(L, -1, 3);
+        w = lua_tonumber(L, -1);
+        lua_pop(L, 1);
+
+        lua_rawgeti(L, -1, 4);
+        h = lua_tonumber(L, -1);
+        lua_pop(L, 1);
+
+        v1_0_config->moveBoundingBox.x = cx - w / 2;
+        v1_0_config->moveBoundingBox.y = cy - h / 2;
+        v1_0_config->moveBoundingBox.width = w;
+        v1_0_config->moveBoundingBox.height = h;
+    }
     lua_pop(L, 1);
 
     lua_getfield(L, -1, "initialPosition");
