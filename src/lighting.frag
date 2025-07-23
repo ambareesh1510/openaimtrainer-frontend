@@ -25,7 +25,6 @@ void main()
     vec4 texelColor = texture(texture0, fragTexCoord);
     vec3 lightDot = vec3(0.0);
     vec3 normal = normalize(fragNormal);
-    vec3 viewD = normalize(viewPos - fragPosition);
     vec3 specular = vec3(0.0);
 
     vec4 tint = colDiffuse * fragColor;
@@ -36,7 +35,7 @@ void main()
     lightDot += vec3(1.0)*NdotL;
 
     finalColor = (texelColor*((tint + vec4(specular, 1.0))*vec4(lightDot, 1.0)));
-    // finalColor += texelColor*(ambient/10.0)*tint;
+    finalColor += texelColor*(ambient)*tint;
 
     // Gamma correction
     finalColor = pow(finalColor, vec4(1.0/2.2));

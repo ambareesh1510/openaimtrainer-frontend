@@ -6,6 +6,8 @@ Slotmap targetMap = { 0 };
 
 cvector_vector_type(TargetData) targetIds = NULL;
 
+cvector_vector_type(EnvironmentCuboidData) environmentCuboids = NULL;
+
 int shotCount = 0;
 int hitCount = 0;
 int score = 0;
@@ -22,6 +24,8 @@ cvector_vector_type(ScenarioUserInfo) scenarioUserInfoList = NULL;
 
 void initLua(lua_State *L) {
     lua_register(L, "addSphere", v1_0_addSphere);
+
+    lua_register(L, "drawCuboid", v1_0_drawCuboid);
 
     lua_register(L, "getPosition", v1_0_getPosition);
     lua_register(L, "setPosition", v1_0_setPosition);
@@ -543,6 +547,7 @@ void loadLuaScenario(ScenarioMetadata metadata, int selectedDifficulty, char *se
         }
         float cameraPos[3] = { camera.position.x, camera.position.y, camera.position.z };
         SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], cameraPos, SHADER_UNIFORM_VEC3);
+        SetShaderValue(wallShader, wallShader.locs[SHADER_LOC_VECTOR_VIEW], cameraPos, SHADER_UNIFORM_VEC3);
 
         BeginDrawing();
 
@@ -550,11 +555,12 @@ void loadLuaScenario(ScenarioMetadata metadata, int selectedDifficulty, char *se
 
             BeginMode3D(camera);
             BeginShaderMode(shader);
-                DrawPlane(
-                    (Vector3) { 0.0f, 0.0f, 0.0f },
-                    (Vector2) { 32.0f, 32.0f },
-                    GRAY
-                );
+                for (size_t i = 0; i < cvector_size(environmentCuboids); i++) {
+                    EnvironmentCuboidData data = environmentCuboids[i];
+                    int modelLoc = GetShaderLocation(wallShader, "model");
+                    SetShaderValueMatrix(wallShader, modelLoc, data.model.transform);
+                    DrawModel(data.model, data.position, 1.0f, WHITE);
+                }
 
                 for (size_t i = 0; i < cvector_size(targetIds); i++) {
                     sm_item_id id = targetIds[i].id;
@@ -592,8 +598,10 @@ void loadLuaScenario(ScenarioMetadata metadata, int selectedDifficulty, char *se
 cleanup:
     UnloadRenderTexture(crosshairTexture);
     sm_destroy(&targetMap);
+    // TODO: need to unload meshes in targetIds
     cvector_clear(targetIds);
     cvector_shrink_to_fit(targetIds);
+    cvector_clear(environmentCuboids);
     lua_close(L);
     EnableCursor();
 

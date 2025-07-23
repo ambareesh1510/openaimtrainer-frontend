@@ -1,9 +1,12 @@
 #include "shader.h"
 
 #include <stdio.h>
+#include "raylib/rlgl.h"
 
 bool shadersInitialized = false;
 Shader shader = { 0 };
+Shader wallShader = { 0 };
+Texture2D wallTexture;
 
 void initShaders() {
     if (shadersInitialized) {
@@ -12,15 +15,23 @@ void initShaders() {
 
     shader = LoadShader("lighting.vert",
                                "lighting.frag");
-    // Get some required shader locations
     shader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(shader, "viewPos");
-    // NOTE: "matModel" location name is automatically assigned on shader loading, 
-    // no need to get the location again if using that uniform name
     shader.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocation(shader, "matModel");
     
     // Ambient light level (some basic lighting)
     int ambientLoc = GetShaderLocation(shader, "ambient");
     SetShaderValue(shader, ambientLoc, (float[4]){ 0.1f, 0.1f, 0.1f, 1.0f }, SHADER_UNIFORM_VEC4);
 
+    wallTexture = LoadTexture("assets/wall_texture.png");
+    SetTextureWrap(wallTexture, TEXTURE_WRAP_REPEAT);
+
+    wallShader = LoadShader("assets/wall_shader.vert", "assets/wall_shader.frag");
+    wallShader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(wallShader, "viewPos");
+    wallShader.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocation(wallShader, "matModel");
+
+    ambientLoc = GetShaderLocation(wallShader, "ambient");
+    SetShaderValue(wallShader, ambientLoc, (float[4]){ 0.05f, 0.05f, 0.05f, 1.0f }, SHADER_UNIFORM_VEC4);
+
     shadersInitialized = true;
 }
+

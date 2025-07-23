@@ -1,5 +1,5 @@
 config = {
-    move = false;
+    move = true;
     piercing = false;
     initialPosition = { 0., 2., 8. };
     initialTarget = { 0., 2., 0. };
@@ -32,6 +32,10 @@ function placeSphere()
 end
 
 function init()
+    drawCuboid(0, 0, 0, 100, 1.5, 100);
+    drawCuboid(0, 0, -10, 100, 100, 1.5);
+    drawCuboid(10, 0, 0, 1.5, 100, 100);
+    drawCuboid(-10, 0, 0, 1.5, 100, 100);
     for i=1,num_spheres do
         placeSphere()
     end

@@ -126,6 +126,37 @@ int v1_0_addSphere(lua_State *L) {
     return 1;
 }
 
+int v1_0_drawCuboid(lua_State *L) {
+    float x = (float) luaL_checknumber(L, 1);
+    float y = (float) luaL_checknumber(L, 2);
+    float z = (float) luaL_checknumber(L, 3);
+    float w = (float) luaL_checknumber(L, 4);
+    float h = (float) luaL_checknumber(L, 5);
+    float l = (float) luaL_checknumber(L, 6);
+
+    Mesh cube = GenMeshCube(w, h, l);
+    // for (int i = 0; i < cube.vertexCount * 2; i++) {
+    //     cube.texcoords[i] *= 2.0f; // Repeat 2x on both axes
+    // }
+
+    Model m = LoadModelFromMesh(cube);
+    // m.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = wallTexture;
+    m.materials[0].shader = wallShader;
+
+    cvector_push_back(
+        environmentCuboids,
+        ((EnvironmentCuboidData) {
+            .position = (Vector3) { x, y, z },
+            .width = w,
+            .height = h,
+            .length = l,
+            .model = m,
+        })
+    );
+
+    return 1;
+}
+
 int v1_0_getPosition(lua_State *L) {
     long long id = luaL_checknumber(L, 1);
     SMItem *item = sm_get_item(&targetMap, id);

@@ -31,6 +31,16 @@ struct TargetData {
 typedef struct TargetData TargetData;
 extern cvector_vector_type(TargetData) targetIds;
 
+struct EnvironmentCuboidData {
+    Vector3 position;
+    float width;
+    float height;
+    float length;
+    Model model;
+};
+typedef struct EnvironmentCuboidData EnvironmentCuboidData;
+extern cvector_vector_type(EnvironmentCuboidData) environmentCuboids;
+
 extern int shotCount;
 extern int hitCount;
 extern int score;

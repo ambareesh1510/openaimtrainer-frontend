@@ -26,6 +26,7 @@ typedef struct v1_0_Config v1_0_Config;
 
 int v1_0_loadConfig(lua_State *L, v1_0_Config *v1_0_config);
 int v1_0_addSphere(lua_State *L);
+int v1_0_drawCuboid(lua_State *L);
 int v1_0_getPosition(lua_State *L);
 int v1_0_setPosition(lua_State *L);
 int v1_0_removeTarget(lua_State *L);
