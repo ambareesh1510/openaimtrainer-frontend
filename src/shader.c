@@ -1,8 +1,15 @@
 #include "shader.h"
 
+#include <stdio.h>
+
+bool shadersInitialized = false;
 Shader shader = { 0 };
 
 void initShaders() {
+    if (shadersInitialized) {
+        return;
+    }
+
     shader = LoadShader("lighting.vert",
                                "lighting.frag");
     // Get some required shader locations
@@ -14,4 +21,6 @@ void initShaders() {
     // Ambient light level (some basic lighting)
     int ambientLoc = GetShaderLocation(shader, "ambient");
     SetShaderValue(shader, ambientLoc, (float[4]){ 0.1f, 0.1f, 0.1f, 1.0f }, SHADER_UNIFORM_VEC4);
+
+    shadersInitialized = true;
 }

@@ -43,6 +43,10 @@ add_custom_target(run
             ${CMAKE_SOURCE_DIR}/src/lighting.frag
             ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/lighting.frag
             &&
+            ${CMAKE_COMMAND} -E copy
+            ${CMAKE_SOURCE_DIR}/src/fxaa.frag
+            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/fxaa.frag
+            &&
             ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/aim_trainer
     DEPENDS aim_trainer
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}

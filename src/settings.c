@@ -91,6 +91,10 @@ SliderData sensitivitySliderData = {
     .max = 2.0f,
 };
 
+CustomLayoutElementData settingsCrosshairData = {
+    .type = DRAW_CROSSHAIR_TEXTURE,
+};
+
 void renderSettingsMenu(void) {
     CLAY({
         .layout = {
@@ -403,7 +407,7 @@ void renderSettingsMenu(void) {
                 },
                 .backgroundColor = COLOR_LIGHT_GRAY,
                 .custom = {
-                    .customData = &currentCrosshairConfig,
+                    .customData = &settingsCrosshairData,
                 },
             }) {
             }

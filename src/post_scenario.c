@@ -5,6 +5,12 @@
 #include "ui_utils.h"
 #include "scenario_select.h"
 
+// TODO: this will be duplicated in the scenario select screen;
+//  consider merging them
+CustomLayoutElementData scoreGraphData = {
+    .type = DRAW_SCENARIO_GRAPH,
+};
+
 void renderPostScenario(void) {
     CLAY({
         .layout = {
@@ -37,6 +43,21 @@ void renderPostScenario(void) {
 
         const char *accuracy = TextFormat("Accuracy: %.2f%%", scenarioResults.accuracy);
         CLAY_TEXT(CLAY_DYNSTR(accuracy), &hugeTextConfig);
+
+        CLAY({
+            .layout = {
+                .sizing = {
+                    .width = CLAY_SIZING_PERCENT(0.5),
+                    .height = CLAY_SIZING_GROW(0),
+                },
+                .childGap = 16,
+            },
+            .backgroundColor = COLOR_LIGHT_GRAY,
+            .custom = {
+                .customData = &scoreGraphData,
+            },
+        }) {
+        }
 
         CLAY({
             .layout = {

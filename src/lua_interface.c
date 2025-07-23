@@ -1,6 +1,7 @@
 #include "lua_interface.h"
 #include "clay_renderer_raylib.h"
 #include "lato.h"
+#include "save_scores.h"
 
 Slotmap targetMap = { 0 };
 
@@ -357,6 +358,7 @@ void loadLuaScenario(ScenarioMetadata metadata, int selectedDifficulty, char *se
     elapsedTime = 0.0;
     shotCooldown = 0.0f;
     scenarioState = AWAITING_START;
+    cvector_clear(scoreSamples);
 
     lua_State *L = luaL_newstate();
     luaL_openlibs(L);
@@ -440,6 +442,16 @@ void loadLuaScenario(ScenarioMetadata metadata, int selectedDifficulty, char *se
             }
         }
         if (scenarioState == STARTED) {
+            if ((int) elapsedTime > cvector_size(scoreSamples)) {
+                ScoreSample s;
+                s.score = score;
+                if (shotCount == 0) {
+                    s.accuracy = 100.0f;
+                } else {
+                    s.accuracy = 100.0f * hitCount / shotCount;
+                }
+                cvector_push_back(scoreSamples, s);
+            }
             elapsedTime += GetFrameTime();
             shotCooldown -= GetFrameTime();
             if (shotCooldown < 0.0f) {
@@ -568,4 +580,13 @@ cleanup:
         (shotCount != 0)
             ? (100. * ((float) hitCount) / ((float) shotCount))
             : (100.);
+
+    if (valid) {
+        SavedScore newScore = {
+            .magic = SAVED_SCORE_MAGIC,
+            .score = scenarioResults.score,
+            .accuracy = scenarioResults.accuracy,
+        };
+        saveScore(metadata, newScore);
+    }
 }

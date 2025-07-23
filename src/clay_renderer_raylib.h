@@ -21,6 +21,9 @@
 extern RenderTexture2D settingsCrosshairTexture;
 extern bool settingsCrosshairTextureInitialized;
 
+extern RenderTexture2D graphTexture;
+extern bool graphTextureInitialized;
+
 struct Clay_ScissorData {
     int x;
     int y;
@@ -38,24 +41,14 @@ extern Camera Raylib_camera;
 
 typedef enum
 {
-    CUSTOM_LAYOUT_ELEMENT_TYPE_3D_MODEL
+    DRAW_CROSSHAIR_TEXTURE,
+    DRAW_PROGRESSION_GRAPH,
+    DRAW_SCENARIO_GRAPH,
 } CustomLayoutElementType;
 
-typedef struct
-{
-    Model model;
-    float scale;
-    Vector3 position;
-    Matrix rotation;
-} CustomLayoutElement_3DModel;
-
-typedef struct
-{
+typedef struct {
     CustomLayoutElementType type;
-    union {
-        CustomLayoutElement_3DModel model;
-    } customData;
-} CustomLayoutElement;
+} CustomLayoutElementData;
 
 // Get a ray trace from the screen position (i.e mouse) within a specific section of the screen
 Ray GetScreenToWorldPointWithZDistance(Vector2 position, Camera camera, int screenWidth, int screenHeight, float zDistance);

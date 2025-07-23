@@ -2,13 +2,18 @@
 
 #include "tomlc17/tomlc17.h"
 
+#include "save_scores.h"
+
 int selectedScenarioIndex = -1;
 int selectedDifficulty = -1;
+
+cvector_vector_type(ScenarioMetadata) fileMetadata = NULL;
 
 void handleSelectScenario(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         selectedScenarioIndex = (int) userData;
         selectedDifficulty = 0;
+        loadSavedScores(fileMetadata[selectedScenarioIndex]);
     }
 }
 
@@ -18,7 +23,6 @@ void handleSelectDifficulty(Clay_ElementId elementId, Clay_PointerData pointerIn
     }
 }
 
-cvector_vector_type(ScenarioMetadata) fileMetadata = NULL;
 
 char *timeBuffer = NULL;
 
@@ -405,12 +409,18 @@ void handleStartScenario(Clay_ElementId elementId, Clay_PointerData pointerInfo,
             difficultyName
         );
         if (scenarioResults.valid) {
+            loadSavedScores(fileMetadata[selectedScenarioIndex]);
             uiState = POST_SCENARIO;
         } else {
             uiState = SCENARIO_SELECT;
         }
     }
 }
+
+// TODO: refer to comment in post_scenario.c
+CustomLayoutElementData scenarioSelectScoreGraphData = {
+    .type = DRAW_PROGRESSION_GRAPH,
+};
 
 void renderScenarioSelectScreen(void) {
     CLAY({
@@ -564,6 +574,31 @@ void renderScenarioSelectScreen(void) {
                             CLAY_TEXT(CLAY_DYNSTR(difficultyData.difficultyName), CLAY_TEXT_CONFIG(textConfig));
                         }
                     }
+                }
+                CLAY({
+                    .layout = {
+                        .sizing = {
+                            .width = CLAY_SIZING_GROW(0),
+                            .height = CLAY_SIZING_GROW(0),
+                        },
+                    },
+                    .border = {
+                        .width = { 2, 2, 2, 2 },
+                        .color = COLOR_WHITE,
+                    },
+                }) {
+                    CLAY({
+                        .layout = {
+                            .sizing = {
+                                .width = CLAY_SIZING_GROW(0),
+                                .height = CLAY_SIZING_GROW(0),
+                            },
+                        },
+                        .backgroundColor = COLOR_GRAY,
+                        .custom = {
+                            .customData = &scenarioSelectScoreGraphData,
+                        },
+                    }) {}
                 }
                 CLAY({
                     .id = CLAY_ID("RightSpacer"),

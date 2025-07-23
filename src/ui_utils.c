@@ -1,5 +1,8 @@
 #include "ui_utils.h"
 
+#include "scenario_select.h"
+#include "save_scores.h"
+
 UiState uiState = MAIN_MENU;
 
 ScenarioResults scenarioResults = { 0 };
@@ -200,6 +203,9 @@ void renderSlider(SliderData *data, float controlWidth) {
 void handleToScenarioSelect(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         uiState = SCENARIO_SELECT;
+        if (selectedScenarioIndex >= 0) {
+            loadSavedScores(fileMetadata[selectedScenarioIndex]);
+        }
     }
 }
 

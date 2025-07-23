@@ -1,7 +1,13 @@
 #include "clay_renderer_raylib.h"
 
+#include "save_scores.h"
+#include "shader.h"
+
 RenderTexture2D settingsCrosshairTexture = { 0 };
 bool settingsCrosshairTextureInitialized = false;
+
+RenderTexture2D graphTexture = { 0 };
+bool graphTextureInitialized = false;
 
 cvector_vector_type(Clay_ScissorData) scissorDataStack = NULL;
 
@@ -213,22 +219,73 @@ void Clay_Raylib_Render(Clay_RenderCommandArray renderCommands, Font* fonts)
                 break;
             }
             case CLAY_RENDER_COMMAND_TYPE_CUSTOM: {
-                // Clay_CustomRenderData *config = &renderCommand->renderData.custom;
-                if (!settingsCrosshairTextureInitialized) {
-                    settingsCrosshairTexture = LoadRenderTexture(
-                        boundingBox.width,
-                        boundingBox.height
-                    );
-                    settingsCrosshairTextureInitialized = true;
-                }
+                Clay_CustomRenderData *config = &renderCommand->renderData.custom;
+                CustomLayoutElementData *customData = config->customData;
+                if (customData->type == DRAW_CROSSHAIR_TEXTURE) {
+                    // TODO: this will break on resize
+                    if (!settingsCrosshairTextureInitialized) {
+                        settingsCrosshairTexture = LoadRenderTexture(
+                            boundingBox.width,
+                            boundingBox.height
+                        );
+                        settingsCrosshairTextureInitialized = true;
+                    }
 
-                drawCrosshair(settingsCrosshairTexture, BLACK);
-                DrawTexture(
-                    settingsCrosshairTexture.texture,
-                    boundingBox.x,
-                    boundingBox.y,
-                    WHITE
-                );
+                    drawCrosshair(
+                        settingsCrosshairTexture,
+                        CLAY_COLOR_TO_RAYLIB_COLOR(config->backgroundColor)
+                    );
+                    DrawTexture(
+                        settingsCrosshairTexture.texture,
+                        boundingBox.x,
+                        boundingBox.y,
+                        WHITE
+                    );
+                } else if (
+                    customData->type == DRAW_PROGRESSION_GRAPH
+                    || customData->type == DRAW_SCENARIO_GRAPH
+                ) {
+                    if (!graphTextureInitialized || scoresModified) {
+                        UnloadRenderTexture(graphTexture);
+                        graphTexture = LoadRenderTexture(
+                            boundingBox.width,
+                            boundingBox.height
+                        );
+                        graphTextureInitialized = true;
+                    }
+                    if (scoresModified) {
+                        drawGraph(
+                            graphTexture,
+                            customData->type,
+                            CLAY_COLOR_TO_RAYLIB_COLOR(config->backgroundColor),
+                            fonts[0]
+                        );
+                        scoresModified = false;
+                    }
+                    // SetShaderValueTexture(
+                    //     fxaaShader,
+                    //     GetShaderLocation(fxaaShader, "texture0"),
+                    //     graphTexture.texture
+                    // );
+                    // Vector2 resolution = {
+                    //     boundingBox.width,
+                    //     boundingBox.height,
+                    // };
+                    // SetShaderValue(fxaaShader, GetShaderLocation(fxaaShader, "resolution"), &resolution, SHADER_UNIFORM_VEC2);
+                    // BeginShaderMode(fxaaShader);
+                    DrawTextureRec(
+                        graphTexture.texture,
+                        (Rectangle) {
+                            0, 0, boundingBox.width, -boundingBox.height
+                        },
+                        (Vector2) {
+                            boundingBox.x,
+                            boundingBox.y,
+                        },
+                        WHITE
+                    );
+                    // EndShaderMode();
+                }
                 break;
             }
             default: {
