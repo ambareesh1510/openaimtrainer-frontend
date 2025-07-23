@@ -41,6 +41,12 @@ typedef struct CrosshairConfig CrosshairConfig;
 
 extern CrosshairConfig currentCrosshairConfig;
 
+// TODO: this is a float so that I can reuse slider code;
+//  turn it into an int?
+// TODO: it also shouldn't really be a slider; use textbox instead
+extern float maxSavedScores;
+#define DEFAULT_MAX_SAVED_SCORES 20.0f
+
 void drawCrosshair(RenderTexture2D texture, Color clearColor);
 
 #define SETTINGS_MAGIC "MAGIC12345"
@@ -49,6 +55,7 @@ struct Settings {
     char magic[sizeof(SETTINGS_MAGIC)];
     float sensitivity;
     CrosshairConfig crosshairConfig;
+    float maxSavedScores;
 };
 typedef struct Settings Settings;
 

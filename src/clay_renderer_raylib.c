@@ -259,10 +259,7 @@ void Clay_Raylib_Render(Clay_RenderCommandArray renderCommands, Font* fonts)
                         );
                         progressionGraphTextureInitialized = true;
                     }
-                    if (
-                        customData->type == DRAW_SCENARIO_GRAPH
-                        && (!scenarioGraphTextureInitialized || scenarioScoresModified)
-                    ) {
+                    if (customData->type == DRAW_SCENARIO_GRAPH && scenarioScoresModified) {
                         UnloadRenderTexture(scenarioGraphTexture);
                         scenarioGraphTexture = LoadRenderTexture(
                             boundingBox.width,
@@ -275,7 +272,7 @@ void Clay_Raylib_Render(Clay_RenderCommandArray renderCommands, Font* fonts)
                             progressionGraphTexture,
                             customData->type,
                             CLAY_COLOR_TO_RAYLIB_COLOR(config->backgroundColor),
-                            fonts[0]
+                            fonts[FONT_ID_GRAPH]
                         );
                         savedScoresModified = false;
                     }

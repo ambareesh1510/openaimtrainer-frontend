@@ -4,11 +4,15 @@
 
 #include "shader.h"
 
-bool savedScoresModified = false;
+bool savedScoresModified = true;
 cvector_vector_type(SavedScore) scoreFiles = NULL;
 
-bool scenarioScoresModified = false;
+bool scenarioScoresModified = true;
 cvector_vector_type(ScoreSample) scoreSamples = NULL;
+
+int compareStrings(const void *a, const void *b) {
+    return strcmp(*(char **) a, *(char **) b);
+}
 
 void saveScore(ScenarioMetadata metadata, SavedScore savedScore) {
     const char *scenarioDirPath = GetDirectoryPath(metadata.path);
@@ -16,11 +20,35 @@ void saveScore(ScenarioMetadata metadata, SavedScore savedScore) {
     if (!DirectoryExists(scoresPath)) {
         MakeDirectory(scoresPath);
     }
+
+    // Compute checksums
+    int scriptDataSize;
+    char *scriptData = LoadFileData(metadata.path, &scriptDataSize);
+    int infoDataSize;
+    char *infoData = LoadFileData(TextFormat("%s/info.toml", scenarioDirPath), &infoDataSize);
+    unsigned int *scriptChecksum = ComputeMD5(scriptData, scriptDataSize);
+    unsigned int *infoChecksum = ComputeMD5(infoData, infoDataSize);
+
+    memcpy(savedScore.scriptChecksum, scriptChecksum, 4 * sizeof(unsigned int));
+    memcpy(savedScore.infoChecksum, infoChecksum, 4 * sizeof(unsigned int));
+    UnloadFileData(scriptData);
+    UnloadFileData(infoData);
+
     time_t currentTime = time(NULL);
     savedScore.time = (intmax_t) currentTime;
     const char *scoreFile = TextFormat("%s/%jd", scoresPath, (intmax_t) currentTime);
-    printf("Saving to %s\n", scoreFile);
     SaveFileData(scoreFile, &savedScore, sizeof(SavedScore));
+
+    // TODO: this should be moved to loadSavedScores
+    FilePathList scoreFileList = LoadDirectoryFiles(scoresPath);
+    int excess = scoreFileList.count - maxSavedScores;
+    if (excess > 0) {
+        qsort(scoreFileList.paths, scoreFileList.count, sizeof(scoreFileList.paths[0]), compareStrings);
+        for (size_t i = 0; i < excess; i++) {
+            remove(scoreFileList.paths[i]);
+        }
+    }
+    UnloadDirectoryFiles(scoreFileList);
 }
 
 int compareSavedScores(const void *a, const void *b) {
@@ -39,24 +67,41 @@ void loadSavedScores(ScenarioMetadata metadata) {
         return;
     }
 
+    // Compute checksums
+    int scriptDataSize;
+    char *scriptData = LoadFileData(metadata.path, &scriptDataSize);
+    int infoDataSize;
+    char *infoData = LoadFileData(TextFormat("%s/info.toml", scenarioDirPath), &infoDataSize);
+    unsigned int *scriptChecksum = ComputeMD5(scriptData, scriptDataSize);
+    unsigned int *infoChecksum = ComputeMD5(infoData, infoDataSize);
+    UnloadFileData(scriptData);
+    UnloadFileData(infoData);
+
     FilePathList scoreFileList = LoadDirectoryFiles(scoresPath);
     int scoreFileSize;
     for (size_t i = 0; i < scoreFileList.count; i++) {
-        SavedScore *scoreFileData = (SavedScore *) LoadFileData(
+        char *rawFileData = LoadFileData(
             scoreFileList.paths[i],
             &scoreFileSize
         );
+        SavedScore *scoreFileData = (SavedScore *) rawFileData;
         if (scoreFileSize != sizeof(SavedScore)) {
             goto bail_loop;
         }
         if (strcmp(scoreFileData->magic, SAVED_SCORE_MAGIC) != 0) {
             goto bail_loop;
         }
+        if (memcmp(scoreFileData->scriptChecksum, scriptChecksum, 4 * sizeof(unsigned int)) != 0) {
+            goto bail_loop;
+        }
+        if (memcmp(scoreFileData->infoChecksum, infoChecksum, 4 * sizeof(unsigned int)) != 0) {
+            goto bail_loop;
+        }
         SavedScore newScore;
         memcpy(&newScore, scoreFileData, sizeof(SavedScore));
         cvector_push_back(scoreFiles, newScore);
 bail_loop:
-        free(scoreFileData);
+        UnloadFileData(rawFileData);
     }
     UnloadDirectoryFiles(scoreFileList);
     qsort(scoreFiles, cvector_size(scoreFiles), sizeof(SavedScore), compareSavedScores);
@@ -74,11 +119,32 @@ void drawGraph(
     int cw = texture.texture.width / 2;
     int ch = texture.texture.height / 2;
 
+    float fontSize = 15.0;
+    float spacing = 1.0;
+
     initShaders();
     BeginTextureMode(texture);
 
+    if (scoreFiles == NULL || cvector_size(scoreFiles) == 0) {
+        const char *text = "No data";
+        // const char *text = "Score";
+        Vector2 textSize = MeasureTextEx(font, text, fontSize * 3, spacing);
+        DrawTextEx(
+            font,
+            text,
+            (Vector2) {
+                cw - textSize.x / 2,
+                ch - textSize.y / 2,
+            },
+            fontSize * 3,
+            spacing,
+            WHITE
+        );
+        goto bail;
+    }
+
     int marginX = 65;
-    int marginY = 40;
+    int marginY = 55;
     int topMarginY = 20;
 
     Color textColor = WHITE;
@@ -87,14 +153,12 @@ void drawGraph(
     Color accuracyColor = YELLOW;
 
     int numSubdivisions = 5;
-    float fontSize = 15.0;
-    float spacing = 1.0;
 
     DrawRectangle(0, 0, w, h, clearColor);
 
-    DrawRectangle(marginX - 15, 0, 2, h, auxColor);
+    DrawRectangle(marginX - 15, 0, 2, h - marginY + 10, auxColor);
 
-    DrawRectangle(w - (marginX - 15), 0, 2, h, auxColor);
+    DrawRectangle(w - (marginX - 15), 0, 2, h - marginY + 10, auxColor);
 
     Vector2 scoreLegendSize = MeasureTextEx(font, "Score", fontSize, spacing);
     Vector2 accuracyLegendSize = MeasureTextEx(font, "Accuracy", fontSize, spacing);
@@ -143,15 +207,17 @@ void drawGraph(
     int scoreOffset = cw - legendWidth / 2;
     int accuracyOffset = scoreOffset + legendLineLength + smallGap + scoreLegendSize.x + largeGap;
 
-    DrawRectangle(scoreOffset, h - marginY / 2, legendLineLength, 1, scoreColor);
-    DrawCircle(scoreOffset + legendLineLength / 2, h - marginY / 2, 3, scoreColor);
+    int legendYOffset = 20;
+
+    DrawRectangle(scoreOffset, h - legendYOffset, legendLineLength, 1, scoreColor);
+    DrawCircle(scoreOffset + legendLineLength / 2, h - legendYOffset, 3, scoreColor);
 
     DrawTextEx(
         font,
         "Score",
         (Vector2) {
             scoreOffset + legendLineLength + smallGap,
-            h - marginY / 2 - scoreLegendSize.y / 2
+            h - legendYOffset - scoreLegendSize.y / 2
         },
         fontSize,
         spacing,
@@ -161,28 +227,25 @@ void drawGraph(
 
     DrawRectangle(
         accuracyOffset,
-        h - marginY / 2,
+        h - legendYOffset,
         legendLineLength,
         1,
         accuracyColor
     );
-    DrawCircle(accuracyOffset + legendLineLength / 2, h - marginY / 2, 3, accuracyColor);
+    DrawCircle(accuracyOffset + legendLineLength / 2, h - legendYOffset, 3, accuracyColor);
 
     DrawTextEx(
         font,
         "Accuracy",
         (Vector2) {
             accuracyOffset + legendLineLength + smallGap,
-            h - marginY / 2 - accuracyLegendSize.y / 2
+            h - legendYOffset - accuracyLegendSize.y / 2
         },
         fontSize,
         spacing,
         WHITE
     );
 
-    if (cvector_size(scoreFiles) == 0) {
-        goto bail;
-    }
 
     int minTime = scoreFiles[0].time;
     int maxTime = scoreFiles[cvector_size(scoreFiles) - 1].time;
@@ -200,23 +263,32 @@ void drawGraph(
         }
     }
 
+    int bound = 0;
+    if (type == DRAW_PROGRESSION_GRAPH) {
+        bound = cvector_size(scoreFiles);
+    } else if (type == DRAW_SCENARIO_GRAPH) {
+        bound = cvector_size(scoreSamples);
+    }
+
     for (size_t i = 0; i <= numSubdivisions; i++) {
         const char *textLeft = TextFormat("%.1f", (minScore + (maxScore - minScore) * (float) i / numSubdivisions));
         const char *textRight = TextFormat("%.0f", 100.0f * i / numSubdivisions);
         Vector2 textSize = MeasureTextEx(font, textLeft, fontSize, spacing);
-        DrawTextEx(
-            font,
-            textLeft,
-            (Vector2) {
-                marginX - 15 - textSize.x - 5,
-                topMarginY
-                    - textSize.y / 2
-                    + (int) ((h - marginY - topMarginY) * (float) (numSubdivisions - i) / numSubdivisions)
-            },
-            fontSize,
-            spacing,
-            WHITE
-        );
+        if (bound != 1 || i == (numSubdivisions + 1) / 2) {
+            DrawTextEx(
+                font,
+                textLeft,
+                (Vector2) {
+                    marginX - 15 - textSize.x - 5,
+                    topMarginY
+                        - textSize.y / 2
+                        + (int) ((h - marginY - topMarginY) * (float) (numSubdivisions - i) / numSubdivisions)
+                },
+                fontSize,
+                spacing,
+                WHITE
+            );
+        }
         DrawTextEx(
             font,
             textRight,
@@ -240,13 +312,56 @@ void drawGraph(
         );
     }
 
-    int prevX, prevScoreY, prevAccuracyY;
-    int bound = 0;
     if (type == DRAW_PROGRESSION_GRAPH) {
-        bound = cvector_size(scoreFiles);
-    } else if (type == DRAW_SCENARIO_GRAPH) {
-        bound = cvector_size(scoreSamples);
+        for (size_t i = 0; i <= 1; i++) {
+            int maxSize = sizeof("YYYY-MM-DD");
+            char *text = malloc(maxSize);
+            time_t currTime = (time_t) (minTime + (maxTime - minTime) * i / numSubdivisions);
+            struct tm *localTime = localtime(&currTime);
+            strftime(text, maxSize, "%m-%d", localTime);
+            Vector2 textSize = MeasureTextEx(font, text, fontSize, spacing);
+            DrawTextEx(
+                font,
+                text,
+                (Vector2) {
+                    marginX + (int) ((float) (w - 2 * marginX) * i) - textSize.x / 2,
+                    h - marginY + 10,
+                },
+                fontSize,
+                spacing,
+                WHITE
+            );
+        }
     }
+
+    if (type == DRAW_SCENARIO_GRAPH) {
+        for (size_t i = 0; i <= numSubdivisions; i++) {
+            int upperBound = cvector_size(scoreSamples) - 1;
+            const char *text = TextFormat("%.1f", (float) upperBound * i / numSubdivisions);
+            Vector2 textSize = MeasureTextEx(font, text, fontSize, spacing);
+            DrawTextEx(
+                font,
+                text,
+                (Vector2) {
+                    marginX + (int) ((float) (w - 2 * marginX) * i / numSubdivisions) - textSize.x / 2,
+                    h - marginY + 10,
+                },
+                fontSize,
+                spacing,
+                WHITE
+            );
+        }
+    }
+
+    int prevX, prevScoreY, prevAccuracyY;
+
+    if (bound == 1) {
+        int pointY = topMarginY
+            + (int) ((h - marginY - topMarginY) * (numSubdivisions - (numSubdivisions + 1) / 2) / numSubdivisions);
+        DrawCircle(cw, pointY, 3, accuracyColor);
+        DrawCircle(cw, pointY, 3, scoreColor);
+    }
+
     for (size_t i = 0; i < bound; i++) {
         int currScore, currAccuracy;
         if (type == DRAW_PROGRESSION_GRAPH) {

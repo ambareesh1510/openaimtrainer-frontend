@@ -4,6 +4,7 @@
 
 float sensitivity = DEFAULT_SENSITIVITY;
 CrosshairConfig currentCrosshairConfig = DEFAULT_CROSSHAIR_CONFIG;
+float maxSavedScores = DEFAULT_MAX_SAVED_SCORES;
 
 void drawCrosshair(RenderTexture2D texture, Color clearColor) {
     BeginTextureMode(texture);
@@ -105,6 +106,7 @@ int loadSettings(char *path) {
     }
     sensitivity = s->sensitivity;
     currentCrosshairConfig = s->crosshairConfig;
+    maxSavedScores = s->maxSavedScores;
     return 0;
 }
 
@@ -113,6 +115,7 @@ void saveSettings(char *path) {
         .magic = SETTINGS_MAGIC,
         .sensitivity = sensitivity,
         .crosshairConfig = currentCrosshairConfig,
+        .maxSavedScores = maxSavedScores,
     };
     SaveFileData(path, &s, sizeof(s));
 }

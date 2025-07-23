@@ -7,6 +7,8 @@
 #define SAVED_SCORE_MAGIC "SCORE"
 struct SavedScore {
     char magic[sizeof(SAVED_SCORE_MAGIC)];
+    unsigned int scriptChecksum[4];
+    unsigned int infoChecksum[4];
     intmax_t time;
     int score;
     float accuracy;

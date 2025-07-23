@@ -78,6 +78,7 @@ enum {
     FONT_ID_BODY_BOLD,
     FONT_ID_HUGE_BOLD,
     FONT_ID_TITLE_BOLD,
+    FONT_ID_GRAPH,
     NUM_FONTS,
 };
 

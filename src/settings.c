@@ -91,6 +91,14 @@ SliderData sensitivitySliderData = {
     .max = 2.0f,
 };
 
+SliderData maxSavedScoresSliderData = {
+    .progress = &maxSavedScores,
+    .id = 8,
+    .min = 0.00f,
+    .max = 100.0f,
+    .snap = 1.0f,
+};
+
 CustomLayoutElementData settingsCrosshairData = {
     .type = DRAW_CROSSHAIR_TEXTURE,
 };
@@ -178,7 +186,7 @@ void renderSettingsMenu(void) {
                     }
                     CLAY({ .layout = { .sizing = { .width = CLAY_SIZING_PERCENT(0.7), }, .childGap = 16, .childAlignment = {.y = CLAY_ALIGN_Y_CENTER, }, }, }) {
                         renderSlider(&centerDotRadiusSliderData, 0.05);
-                        const char *sliderPercent = TextFormat("%.2f", currentCrosshairConfig.centerDotRadius);
+                        const char *sliderPercent = TextFormat("%.0f", currentCrosshairConfig.centerDotRadius);
                         CLAY_TEXT(CLAY_DYNSTR(sliderPercent), &largeTextConfig);
                     }
                 }
@@ -230,7 +238,7 @@ void renderSettingsMenu(void) {
                     }
                     CLAY({ .layout = { .sizing = { .width = CLAY_SIZING_PERCENT(0.7), }, .childGap = 16, .childAlignment = {.y = CLAY_ALIGN_Y_CENTER, }, }, }) {
                         renderSlider(&innerLineLengthSliderData, 0.05);
-                        const char *sliderPercent = TextFormat("%.2f", currentCrosshairConfig.innerLineLength);
+                        const char *sliderPercent = TextFormat("%.0f", currentCrosshairConfig.innerLineLength);
                         CLAY_TEXT(CLAY_DYNSTR(sliderPercent), &largeTextConfig);
                     }
                 }
@@ -249,7 +257,7 @@ void renderSettingsMenu(void) {
                     }
                     CLAY({ .layout = { .sizing = { .width = CLAY_SIZING_PERCENT(0.7), }, .childGap = 16, .childAlignment = {.y = CLAY_ALIGN_Y_CENTER, }, }, }) {
                         renderSlider(&innerLineWidthSliderData, 0.05);
-                        const char *sliderPercent = TextFormat("%.2f", currentCrosshairConfig.innerLineWidth);
+                        const char *sliderPercent = TextFormat("%.0f", currentCrosshairConfig.innerLineWidth);
                         CLAY_TEXT(CLAY_DYNSTR(sliderPercent), &largeTextConfig);
                     }
                 }
@@ -268,7 +276,7 @@ void renderSettingsMenu(void) {
                     }
                     CLAY({ .layout = { .sizing = { .width = CLAY_SIZING_PERCENT(0.7), }, .childGap = 16, .childAlignment = {.y = CLAY_ALIGN_Y_CENTER, }, }, }) {
                         renderSlider(&innerLineGapSliderData, 0.05);
-                        const char *sliderPercent = TextFormat("%.2f", currentCrosshairConfig.innerLineGap);
+                        const char *sliderPercent = TextFormat("%.0f", currentCrosshairConfig.innerLineGap);
                         CLAY_TEXT(CLAY_DYNSTR(sliderPercent), &largeTextConfig);
                     }
                 }
@@ -320,7 +328,7 @@ void renderSettingsMenu(void) {
                     }
                     CLAY({ .layout = { .sizing = { .width = CLAY_SIZING_PERCENT(0.7), }, .childGap = 16, .childAlignment = {.y = CLAY_ALIGN_Y_CENTER, }, }, }) {
                         renderSlider(&outerLineLengthSliderData, 0.05);
-                        const char *sliderPercent = TextFormat("%.2f", currentCrosshairConfig.outerLineLength);
+                        const char *sliderPercent = TextFormat("%.0f", currentCrosshairConfig.outerLineLength);
                         CLAY_TEXT(CLAY_DYNSTR(sliderPercent), &largeTextConfig);
                     }
                 }
@@ -339,7 +347,7 @@ void renderSettingsMenu(void) {
                     }
                     CLAY({ .layout = { .sizing = { .width = CLAY_SIZING_PERCENT(0.7), }, .childGap = 16, .childAlignment = {.y = CLAY_ALIGN_Y_CENTER, }, }, }) {
                         renderSlider(&outerLineWidthSliderData, 0.05);
-                        const char *sliderPercent = TextFormat("%.2f", currentCrosshairConfig.outerLineWidth);
+                        const char *sliderPercent = TextFormat("%.0f", currentCrosshairConfig.outerLineWidth);
                         CLAY_TEXT(CLAY_DYNSTR(sliderPercent), &largeTextConfig);
                     }
                 }
@@ -358,7 +366,7 @@ void renderSettingsMenu(void) {
                     }
                     CLAY({ .layout = { .sizing = { .width = CLAY_SIZING_PERCENT(0.7), }, .childGap = 16, .childAlignment = {.y = CLAY_ALIGN_Y_CENTER, }, }, }) {
                         renderSlider(&outerLineGapSliderData, 0.05);
-                        const char *sliderPercent = TextFormat("%.2f", currentCrosshairConfig.outerLineGap);
+                        const char *sliderPercent = TextFormat("%.0f", currentCrosshairConfig.outerLineGap);
                         CLAY_TEXT(CLAY_DYNSTR(sliderPercent), &largeTextConfig);
                     }
                 }
@@ -468,6 +476,41 @@ void renderSettingsMenu(void) {
                 }) {
                     Clay_OnHover(handleResetSensitivity, 0);
                     CLAY_TEXT(CLAY_STRING("Reset sensitivity to default value"), &largeTextConfig);
+                }
+            }
+        }
+
+        HCENTER {
+            CLAY_TEXT(CLAY_STRING("Other"), &hugeTextConfig);
+        }
+
+        CLAY({
+            .id = CLAY_ID("OtherContainer"),
+            .layout = {
+                .sizing = {
+                    .width = CLAY_SIZING_PERCENT(0.5),
+                },
+                .layoutDirection = CLAY_TOP_TO_BOTTOM,
+                .childGap = 16,
+            },
+        }) {
+            CLAY({
+                .layout = {
+                    .sizing = {
+                        .width = CLAY_SIZING_GROW(0),
+                    },
+                     .childAlignment = {.y = CLAY_ALIGN_Y_CENTER, },
+                    .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                    .childGap = 16,
+                },
+            }) {
+                CLAY({ .layout = { .sizing = { .width = CLAY_SIZING_PERCENT(0.3), }, }, }) {
+                    CLAY_TEXT(CLAY_STRING("Max saved scores"), &largeTextConfig);
+                }
+                CLAY({ .layout = { .sizing = { .width = CLAY_SIZING_PERCENT(0.7), }, .childGap = 16, .childAlignment = {.y = CLAY_ALIGN_Y_CENTER, }, }, }) {
+                    renderSlider(&maxSavedScoresSliderData, 0.05);
+                    const char *sliderPercent = TextFormat("%d", (int) maxSavedScores);
+                    CLAY_TEXT(CLAY_DYNSTR(sliderPercent), &largeTextConfig);
                 }
             }
         }

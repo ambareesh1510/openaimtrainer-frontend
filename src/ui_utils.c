@@ -25,6 +25,9 @@ void initFonts() {
     fonts[FONT_ID_TITLE_BOLD] = LoadFontFromMemory(".ttf", LatoBoldTTF, LatoBoldTTF_len, 56, NULL, 0);
     SetTextureFilter(fonts[FONT_ID_TITLE_BOLD].texture, TEXTURE_FILTER_BILINEAR);
 
+    fonts[FONT_ID_GRAPH] = LoadFontFromMemory(".ttf", LatoBoldTTF, LatoBoldTTF_len, 45, NULL, 0);
+    SetTextureFilter(fonts[FONT_ID_GRAPH].texture, TEXTURE_FILTER_BILINEAR);
+
     Clay_SetMeasureTextFunction(Raylib_MeasureText, fonts);
 }
 
