@@ -11,7 +11,6 @@ include_directories(extern/raylib/external/glfw/include)
 file(GLOB SOURCES "src/*.c")
 file(GLOB_RECURSE EXTERNS "extern/*.c")
 file(GLOB RAYLIB_PLATFORMS "${CMAKE_SOURCE_DIR}/extern/raylib/platforms/*.c")
-message(STATUS "My list: ${SOURCES}")
 file(GLOB_RECURSE RAYLIB_GLFW "${CMAKE_SOURCE_DIR}/extern/raylib/external/glfw/*.c")
 list(REMOVE_ITEM EXTERNS
     "${CMAKE_SOURCE_DIR}/extern/clay/clay_renderer_raylib.c"
@@ -32,6 +31,16 @@ add_executable(aim_trainer ${SOURCES} ${EXTERNS})
 
 target_link_libraries(aim_trainer PRIVATE ${PRIVATE_PLATFORM_SPECIFIC_LIBRARIES})
 target_link_libraries(aim_trainer PUBLIC ${PUBLIC_PLATFORM_SPECIFIC_LIBRARIES})
+
+message(STATUS "Configuring ${CMAKE_SYSTEM_NAME}...")
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    target_link_libraries(aim_trainer PRIVATE winmm)
+endif()
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_compile_definitions(_GLFW_X11)
+    add_compile_definitions(LUA_USE_POSIX)
+endif()
 
 # TODO: eventually should just include the shaders as C strings
 add_custom_target(run
