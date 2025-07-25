@@ -3,6 +3,13 @@
 #define CLAY_IMPLEMENTATION
 #include "clay/clay.h"
 
+#include "main_menu.h"
+#include "login_screen.h"
+#include "settings.h"
+#include "scenario_select.h"
+#include "post_scenario.h"
+#include "lua_interface.h"
+
 typedef struct
 {
     Clay_Vector2 clickOrigin;
@@ -20,9 +27,15 @@ void UpdateDrawFrame(Font* fonts)
     float mouseWheelX = mouseWheelDelta.x;
     float mouseWheelY = mouseWheelDelta.y;
 
-    if (IsKeyPressed(KEY_D)) {
+    if (IsKeyPressed(KEY_TAB)) {
         debugEnabled = !debugEnabled;
         Clay_SetDebugModeEnabled(debugEnabled);
+    }
+
+    if (IsMouseButtonDown(0)) {
+        if (focusedTextBoxData != NULL) {
+            focusedTextBoxData->focused = false;
+        }
     }
 
     Clay_Vector2 mousePosition = RAYLIB_VECTOR2_TO_CLAY_VECTOR2(GetMousePosition());
@@ -41,6 +54,11 @@ void UpdateDrawFrame(Font* fonts)
     Clay_BeginLayout();
     if (uiState == MAIN_MENU) {
         renderMainMenu();
+    } else if (uiState == LOGIN) {
+        renderLoginScreen();
+        if (IsKeyPressed(KEY_ESCAPE)) {
+            uiState = MAIN_MENU;
+        }
     } else if (uiState == SCENARIO_SELECT) {
         renderScenarioSelectScreen();
         // TODO: when exiting a scenario using ESC, this causes it to go

@@ -1,8 +1,36 @@
-#include "main_menu.h"
+#include "login_screen.h"
 
+#include "clay/clay.h"
 #include "ui_utils.h"
 
-void renderMainMenu(void) {
+void handleSignUp(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        printf("Sign up\n");
+    }
+}
+
+void handleLogIn(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        printf("Log in\n");
+    }
+}
+
+#define USERNAME_PLACEHOLDER "Username"
+TextBoxData usernameData = {
+    .placeholder = USERNAME_PLACEHOLDER,
+    .placeholderLen = sizeof(USERNAME_PLACEHOLDER) - 1,
+    .id = 1,
+};
+
+#define PASSWORD_PLACEHOLDER "Password"
+TextBoxData passwordData = {
+    .placeholder = PASSWORD_PLACEHOLDER,
+    .placeholderLen = sizeof(PASSWORD_PLACEHOLDER) - 1,
+    .obfuscated = true,
+    .id = 2,
+};
+
+void renderLoginScreen(void) {
     CLAY({
         .layout = {
             .sizing = {
@@ -19,7 +47,7 @@ void renderMainMenu(void) {
         },
         .backgroundColor = COLOR_GRAY,
     }) {
-        CLAY_TEXT(CLAY_STRING("Aim Trainer"), &titleTextConfig);
+        CLAY_TEXT(CLAY_STRING("Log In"), &titleTextConfig);
 
         CLAY({
             .layout = {
@@ -29,22 +57,12 @@ void renderMainMenu(void) {
             },
         }) {}
 
-        CLAY({
-            .backgroundColor = Clay_Hovered()
-                ? COLOR_DARK_BLUE
-                : COLOR_LIGHT_GRAY,
-            .layout = {
-                .padding = { 5, 5, 5, 5 },
-                .sizing = {
-                    .width = CLAY_SIZING_PERCENT(0.3),
-                },
-                .childAlignment = {
-                    .x = CLAY_ALIGN_X_CENTER,
-                },
-            },
-        }) {
-            Clay_OnHover(handleToScenarioSelect, 0);
-            CLAY_TEXT(CLAY_STRING("Scenario Select"), &hugeTextConfig);
+        CDIV(CLAY_SIZING_PERCENT(0.3), CLAY_SIZING_FIXED(50)) {
+            renderTextBox(&usernameData);
+        }
+
+        CDIV(CLAY_SIZING_PERCENT(0.3), CLAY_SIZING_FIXED(50)) {
+            renderTextBox(&passwordData);
         }
 
         CLAY({
@@ -61,8 +79,8 @@ void renderMainMenu(void) {
                 },
             },
         }) {
-            Clay_OnHover(handleToSettings, 0);
-            CLAY_TEXT(CLAY_STRING("Settings"), &hugeTextConfig);
+            Clay_OnHover(handleSignUp, 0);
+            CLAY_TEXT(CLAY_STRING("Sign up"), &hugeTextConfig);
         }
 
         CLAY({
@@ -79,7 +97,7 @@ void renderMainMenu(void) {
                 },
             },
         }) {
-            Clay_OnHover(handleToLoginScreen, 0);
+            Clay_OnHover(handleLogIn, 0);
             CLAY_TEXT(CLAY_STRING("Log In"), &hugeTextConfig);
         }
     }

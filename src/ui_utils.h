@@ -9,6 +9,7 @@
 
 enum UiState {
     MAIN_MENU,
+    LOGIN,
     SCENARIO_SELECT,
     SETTINGS,
     POST_SCENARIO,
@@ -61,6 +62,7 @@ typedef struct ScenarioMetadata ScenarioMetadata;
 #define COLOR_WHITE (Clay_Color) {255, 255, 255, 255}
 #define COLOR_ORANGE (Clay_Color) {225, 138, 50, 255}
 #define COLOR_BLUE (Clay_Color) {111, 173, 162, 255}
+#define COLOR_BLANK (Clay_Color) {0, 0, 0, 0}
 
 #define RAYLIB_VECTOR2_TO_CLAY_VECTOR2(vector) (Clay_Vector2) { .x = vector.x, .y = vector.y }
 
@@ -95,8 +97,6 @@ extern Clay_TextElementConfig titleTextConfig;
 
 void hSpacer();
 
-void handleClickCheckbox(Clay_ElementId elementId, Clay_PointerData pointerData, intptr_t userData);
-
 void renderCheckbox(bool *checked);
 
 // TODO: change progress from (float *) to float
@@ -111,18 +111,32 @@ struct SliderData {
 };
 typedef struct SliderData SliderData;
 
-void updateSlider(Clay_ElementId elementId, Clay_Vector2 pointerPosition, SliderData *data);
-
-extern bool sliderSelected;
-void handleMoveSlider(Clay_ElementId elementId, Clay_PointerData pointerData, intptr_t userData);
-
 void renderSlider(SliderData *data, float controlWidth);
 
+#define TEXT_BOX_MAX_LEN 128
+struct TextBoxData {
+    char str[TEXT_BOX_MAX_LEN + 1];
+    size_t len;
+    bool obfuscated;
+    bool focused;
+    const char placeholder[TEXT_BOX_MAX_LEN + 1];
+    size_t placeholderLen;
+    float blink;
+    float backspaceDelay;
+    int id;
+};
+typedef struct TextBoxData TextBoxData;
+
+extern TextBoxData *focusedTextBoxData;
+
+void renderTextBox(TextBoxData *data);
 
 void handleToScenarioSelect(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData);
 
 void handleToSettings(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData);
 
 void handleToMainMenu(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData);
+
+void handleToLoginScreen(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData);
 
 #endif /* UI_UTILS_H */

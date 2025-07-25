@@ -203,6 +203,130 @@ void renderSlider(SliderData *data, float controlWidth) {
     }
 }
 
+TextBoxData *focusedTextBoxData = NULL;
+
+void handleClickTextBox(Clay_ElementId elementId, Clay_PointerData pointerData, intptr_t userData) {
+    if (pointerData.state == CLAY_POINTER_DATA_PRESSED) {
+        TextBoxData *data = (TextBoxData *) userData;
+        focusedTextBoxData = data;
+        data->focused = true;
+    }
+}
+
+const char *obfuscatedText =
+    "****************"
+    "****************"
+    "****************"
+    "****************"
+    "****************"
+    "****************"
+    "****************"
+    "****************";
+
+void renderTextBox(TextBoxData *data) {
+    Clay_ElementId textBoxId = CLAY_IDI("textBox", data->id);
+    float scrollWidth = Clay_GetScrollContainerData(textBoxId).contentDimensions.width;
+    float elementWidth = Clay_GetElementData(textBoxId).boundingBox.width;
+    int alignX = CLAY_ALIGN_X_LEFT;
+    if (elementWidth < scrollWidth) {
+        alignX = CLAY_ALIGN_X_RIGHT;
+    }
+    CLAY({
+        .id = textBoxId,
+        .layout = {
+            .sizing = {
+                .width = CLAY_SIZING_GROW(0),
+                .height = CLAY_SIZING_GROW(0),
+            },
+            .padding = { 5, 5, 5, 5 },
+            .childAlignment = {
+                .x = alignX,
+                .y = CLAY_ALIGN_Y_CENTER,
+            }
+        },
+        .backgroundColor = COLOR_GRAY,
+        .border = {
+            .width = { 1, 1, 1, 1 },
+            .color = data->focused
+                ? COLOR_WHITE
+                : COLOR_LIGHT_GRAY,
+        },
+        .clip = {
+            .horizontal = true,
+        },
+    }) {
+        Clay_OnHover(handleClickTextBox, (intptr_t) data);
+
+        if (!data->focused || data->len == 0) {
+            data->blink = 0.0f;
+            data->backspaceDelay = 0.0f;
+        } else {
+            data->blink += GetFrameTime();
+        }
+
+        if (data->focused) {
+            int key = GetCharPressed();
+
+            while (key > 0) {
+                data->blink = 0.0f;
+                if (key < 32 || key > 125) {
+                    continue;
+                }
+                if (data->len != TEXT_BOX_MAX_LEN) {
+                    data->str[data->len] = (char) key;
+                    data->len++;
+                }
+
+                key = GetCharPressed();
+            }
+
+            if (IsKeyPressed(KEY_BACKSPACE)) {
+                data->backspaceDelay = 0.0f;
+            } else {
+                data->backspaceDelay = MAX(data->backspaceDelay - GetFrameTime(), 0.0f);
+            }
+
+            if (IsKeyDown(KEY_BACKSPACE) && data->len != 0 && FloatEquals(data->backspaceDelay, 0.0f)) {
+                data->len--;
+                data->str[data->len] = '\0';
+                data->backspaceDelay = 0.02f;
+            }
+        }
+
+        Clay_String textBoxString;
+        Clay_TextElementConfig textBoxConfig = largeTextConfig;
+        if (data->len == 0 && data->placeholder != NULL) {
+            textBoxString = (Clay_String) {
+                .isStaticallyAllocated = true,
+                .length = data->placeholderLen,
+                .chars = data->placeholder,
+            };
+            textBoxConfig.textColor = COLOR_LIGHT_GRAY;
+        } else {
+            textBoxString = (Clay_String) {
+                .isStaticallyAllocated = false,
+                .length = data->len,
+            };
+            if (data->obfuscated) {
+                textBoxString.chars = obfuscatedText;
+            } else {
+                textBoxString.chars = data->str;
+            }
+        }
+        CLAY_TEXT(textBoxString, CLAY_TEXT_CONFIG(textBoxConfig));
+        if (
+            data->focused
+            && data->len != 0
+            && (int) (data->blink / 0.5) % 2 == 0
+        ) {
+        } else {
+            textBoxConfig.textColor = COLOR_BLANK;
+        }
+        CLAY_TEXT(CLAY_STRING("|"), CLAY_TEXT_CONFIG(textBoxConfig));
+
+    }
+}
+
 void handleToScenarioSelect(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         uiState = SCENARIO_SELECT;
@@ -224,5 +348,11 @@ void handleToSettings(Clay_ElementId elementId, Clay_PointerData pointerInfo, in
 void handleToMainMenu(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         uiState = MAIN_MENU;
+    }
+}
+
+void handleToLoginScreen(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        uiState = LOGIN;
     }
 }
