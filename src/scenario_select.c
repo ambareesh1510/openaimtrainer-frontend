@@ -435,7 +435,7 @@ void renderScenarioSelectScreen(void) {
             .padding = { 16, 16, 16, 16 },
             .childGap = 16
         },
-        .backgroundColor = COLOR_BLACK,
+        .backgroundColor = COLOR_GRAY,
     }) {
         CLAY({
             .id = CLAY_ID("SideBar"),
@@ -448,7 +448,10 @@ void renderScenarioSelectScreen(void) {
                 .padding = { 16, 16, 16, 16 },
                 .childGap = 16
             },
-            .backgroundColor = COLOR_GRAY,
+            .border = {
+                .width = { 2, 2, 2, 2 },
+                .color = COLOR_LIGHT_GRAY,
+            },
         }) {
             CLAY({
                 .clip = {
@@ -523,7 +526,20 @@ void renderScenarioSelectScreen(void) {
             .backgroundColor = COLOR_GRAY
         }) {
             if (selectedScenarioIndex == -1) {
-                CLAY_TEXT(CLAY_STRING("No scenario selected"), CLAY_TEXT_CONFIG(normalTextConfig));
+                CLAY({
+                    .layout = {
+                        .sizing = {
+                            .width = CLAY_SIZING_GROW(0),
+                            .height = CLAY_SIZING_GROW(0),
+                        },
+                        .childAlignment = {
+                            .x = CLAY_ALIGN_X_CENTER,
+                            .y = CLAY_ALIGN_Y_CENTER,
+                        },
+                    },
+                }) {
+                    CLAY_TEXT(CLAY_STRING("No scenario selected"), CLAY_TEXT_CONFIG(largeTextConfig));
+                }
             } else {
                 ScenarioMetadata s = fileMetadata[selectedScenarioIndex];
                 CLAY_TEXT(

@@ -26,12 +26,14 @@ list(REMOVE_ITEM EXTERNS
 
 link_libraries(m)
 
-find_package (CURL REQUIRED)
+find_package(CURL REQUIRED)
+find_package(cJSON REQUIRED)
 
 add_compile_definitions(PLATFORM_DESKTOP_GLFW)
 add_executable(aim_trainer ${SOURCES} ${EXTERNS})
 
 target_link_libraries(aim_trainer CURL::libcurl)
+target_link_libraries(aim_trainer cjson::cjson)
 
 message(STATUS "Configuring ${CMAKE_SYSTEM_NAME}...")
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")

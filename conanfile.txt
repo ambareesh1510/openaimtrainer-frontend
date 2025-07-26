@@ -1,5 +1,6 @@
 [requires]
 libcurl/8.12.1
+cjson/1.7.18
 
 [generators]
 CMakeDeps

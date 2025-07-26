@@ -8,7 +8,9 @@
 #include "settings.h"
 #include "scenario_select.h"
 #include "post_scenario.h"
+#include "status_bar.h"
 #include "lua_interface.h"
+#include "save_scores.h"
 
 typedef struct
 {
@@ -52,29 +54,47 @@ void UpdateDrawFrame(Font* fonts)
 
     Clay_UpdateScrollContainers(false, (Clay_Vector2) {mouseWheelX * 1.5, mouseWheelY * 1.5}, GetFrameTime());
     Clay_BeginLayout();
-    if (uiState == MAIN_MENU) {
-        renderMainMenu();
-    } else if (uiState == LOGIN) {
-        renderLoginScreen();
-        if (IsKeyPressed(KEY_ESCAPE)) {
-            uiState = MAIN_MENU;
-        }
-    } else if (uiState == SCENARIO_SELECT) {
-        renderScenarioSelectScreen();
-        // TODO: when exiting a scenario using ESC, this causes it to go
-        //  directly to main menu
-        if (IsKeyPressed(KEY_ESCAPE)) {
-            uiState = MAIN_MENU;
-        }
-    } else if (uiState == SETTINGS) {
-        renderSettingsMenu();
-        if (IsKeyPressed(KEY_ESCAPE)) {
-            uiState = MAIN_MENU;
-        }
-    } else if (uiState == POST_SCENARIO) {
-        renderPostScenario();
-        if (IsKeyPressed(KEY_ESCAPE)) {
-            uiState = MAIN_MENU;
+    CLAY({
+        .layout = {
+            .layoutDirection = CLAY_TOP_TO_BOTTOM,
+            .sizing = {
+                .width = CLAY_SIZING_GROW(0),
+                .height = CLAY_SIZING_GROW(0),
+            },
+        },
+    }) {
+        if (uiState == MAIN_MENU) {
+            renderMainMenu();
+        } else {
+            CDIV(CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0)) {
+                if (uiState == LOGIN) {
+                    renderLoginScreen();
+                    if (IsKeyPressed(KEY_ESCAPE)) {
+                        uiState = SCENARIO_SELECT;
+                    }
+                } else if (uiState == SCENARIO_SELECT) {
+                    renderScenarioSelectScreen();
+                    // TODO: when exiting a scenario using ESC, this causes it to go
+                    //  directly to main menu
+                    if (IsKeyPressed(KEY_ESCAPE)) {
+                        uiState = SCENARIO_SELECT;
+                    }
+                } else if (uiState == SETTINGS) {
+                    renderSettingsMenu();
+                    if (IsKeyPressed(KEY_ESCAPE)) {
+                        uiState = SCENARIO_SELECT;
+                    }
+                } else if (uiState == POST_SCENARIO) {
+                    renderPostScenario();
+                    if (IsKeyPressed(KEY_ESCAPE)) {
+                        uiState = SCENARIO_SELECT;
+                        if (selectedScenarioIndex >= 0) {
+                            loadSavedScores(fileMetadata[selectedScenarioIndex]);
+                        }
+                    }
+                }
+            }
+            renderStatusBar();
         }
     }
     Clay_RenderCommandArray renderCommands = Clay_EndLayout();

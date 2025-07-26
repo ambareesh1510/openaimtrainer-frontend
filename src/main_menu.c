@@ -19,7 +19,8 @@ void renderMainMenu(void) {
         },
         .backgroundColor = COLOR_GRAY,
     }) {
-        CLAY_TEXT(CLAY_STRING("Aim Trainer"), &titleTextConfig);
+        Clay_OnHover(handleToScenarioSelect, 0);
+        CLAY_TEXT(CLAY_STRING("Open Aim Trainer"), &titleTextConfig);
 
         CLAY({
             .layout = {
@@ -29,58 +30,6 @@ void renderMainMenu(void) {
             },
         }) {}
 
-        CLAY({
-            .backgroundColor = Clay_Hovered()
-                ? COLOR_DARK_BLUE
-                : COLOR_LIGHT_GRAY,
-            .layout = {
-                .padding = { 5, 5, 5, 5 },
-                .sizing = {
-                    .width = CLAY_SIZING_PERCENT(0.3),
-                },
-                .childAlignment = {
-                    .x = CLAY_ALIGN_X_CENTER,
-                },
-            },
-        }) {
-            Clay_OnHover(handleToScenarioSelect, 0);
-            CLAY_TEXT(CLAY_STRING("Scenario Select"), &hugeTextConfig);
-        }
-
-        CLAY({
-            .backgroundColor = Clay_Hovered()
-                ? COLOR_DARK_BLUE
-                : COLOR_LIGHT_GRAY,
-            .layout = {
-                .padding = { 5, 5, 5, 5 },
-                .sizing = {
-                    .width = CLAY_SIZING_PERCENT(0.3),
-                },
-                .childAlignment = {
-                    .x = CLAY_ALIGN_X_CENTER,
-                },
-            },
-        }) {
-            Clay_OnHover(handleToSettings, 0);
-            CLAY_TEXT(CLAY_STRING("Settings"), &hugeTextConfig);
-        }
-
-        CLAY({
-            .backgroundColor = Clay_Hovered()
-                ? COLOR_DARK_BLUE
-                : COLOR_LIGHT_GRAY,
-            .layout = {
-                .padding = { 5, 5, 5, 5 },
-                .sizing = {
-                    .width = CLAY_SIZING_PERCENT(0.3),
-                },
-                .childAlignment = {
-                    .x = CLAY_ALIGN_X_CENTER,
-                },
-            },
-        }) {
-            Clay_OnHover(handleToLoginScreen, 0);
-            CLAY_TEXT(CLAY_STRING("Log In"), &hugeTextConfig);
-        }
+        CLAY_TEXT(CLAY_STRING("Click anywhere to begin"), &largeTextConfig);
     }
 }
