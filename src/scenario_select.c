@@ -25,8 +25,12 @@ enum {
 cvector_vector_type(ScenarioMetadata) myFileMetadata = NULL;
 cvector_vector_type(ScenarioMetadata) downloadedFileMetadata = NULL;
 cvector_vector_type(ScenarioMetadata) onlineFileMetadata = NULL;
+cvector_vector_type(char *) onlineFileUuids = NULL;
 
 cvector_vector_type(ScenarioMetadata) *currentFileMetadata = &myFileMetadata;
+
+FindScenariosInfo findScenariosInfo;
+bool findScenariosInProgress = false;
 
 int compareFuzzyScore(const void *a, const void *b) {
     ScenarioMetadata *metadataA = (ScenarioMetadata *) a;
@@ -38,6 +42,10 @@ int compareFuzzyScore(const void *a, const void *b) {
 
 void fuzzySortCurrentMetadataList(void) {
     if (currentScenarioTab == ONLINE_SCENARIOS) {
+        cleanupFindScenariosInfo(&findScenariosInfo);
+        findScenariosInfo = createFindScenariosInfo(scenarioSearchData.str);
+        sendFindScenariosRequest(&findScenariosInfo);
+        findScenariosInProgress = true;
         return;
     } else {
         qsort(
@@ -264,21 +272,41 @@ bail:
     return version;
 }
 
+void freeMetadata() {
+    for (size_t i = 0; i < cvector_size(*currentFileMetadata); i++) {
+        free((*currentFileMetadata)[i].name);
+        free((*currentFileMetadata)[i].author);
+        free((*currentFileMetadata)[i].description);
+        if (currentScenarioTab != ONLINE_SCENARIOS) {
+            free((*currentFileMetadata)[i].path);
+            for (size_t j = 0; j < (*currentFileMetadata)[i].numDifficulties; j++) {
+                free((*currentFileMetadata)[i].difficultyData[j].difficultyName);
+            }
+            free((*currentFileMetadata)[i].difficultyData);
+        }
+        if (currentScenarioTab == ONLINE_SCENARIOS) {
+            free(onlineFileUuids[i]);
+        }
+    }
+    cvector_clear(onlineFileUuids);
+    cvector_clear(*currentFileMetadata);
+}
+
+
 void findScenarios() {
+    selectedScenarioIndex = -1;
+
     if (currentScenarioTab == ONLINE_SCENARIOS) {
-        fprintf(stderr, "Error: findScenarios called on ONLINE_SCENARIOS!\n");
+        if (*currentFileMetadata == NULL) {
+            cleanupFindScenariosInfo(&findScenariosInfo);
+            findScenariosInfo = createFindScenariosInfo(scenarioSearchData.str);
+            findScenariosInProgress = true;
+            sendFindScenariosRequest(&findScenariosInfo);
+        }
         return;
     }
-    selectedScenarioIndex = -1;
-    for (size_t i = 0; i < cvector_size(*currentFileMetadata); i++) {
-        free((*currentFileMetadata)[i].path);
-        for (size_t j = 0; j < (*currentFileMetadata)[i].numDifficulties; j++) {
-            free((*currentFileMetadata)[i].difficultyData[j].difficultyName);
-        }
-        free((*currentFileMetadata)[i].difficultyData);
-    }
-    cvector_clear(*currentFileMetadata);
-
+    
+    freeMetadata();
 
     // TODO: don't hardcode
     FilePathList dir;
@@ -341,35 +369,30 @@ void findScenarios() {
         if (name.type != TOML_STRING) {
             fprintf(stderr, "Invalid key `name`!");
             fail = true;
-            toml_free(tomlParseResult);
             goto cleanup;
         }
 
         if (author.type != TOML_STRING) {
             fprintf(stderr, "Invalid key `author`!");
             fail = true;
-            toml_free(tomlParseResult);
             goto cleanup;
         }
 
         if (description.type != TOML_STRING) {
             fprintf(stderr, "Invalid key `description`!");
             fail = true;
-            toml_free(tomlParseResult);
             goto cleanup;
         }
 
         if (time.type != TOML_FP64) {
             fprintf(stderr, "Invalid key `time`!");
             fail = true;
-            toml_free(tomlParseResult);
             goto cleanup;
         }
 
         if (apiVersion.type != TOML_STRING) {
             fprintf(stderr, "Invalid key `api_version`!");
             fail = true;
-            toml_free(tomlParseResult);
             goto cleanup;
         }
 
@@ -380,7 +403,6 @@ void findScenarios() {
         } else if (difficulties.type != TOML_ARRAY) {
             fprintf(stderr, "Invalid key `difficulties`!");
             fail = true;
-            toml_free(tomlParseResult);
             goto cleanup;
         }
 
@@ -434,9 +456,10 @@ void findScenarios() {
 
         ScenarioMetadata metadata = {
             .path = luaFilePath,
-            .name = name.u.s,
-            .author = author.u.s,
-            .description = description.u.s,
+            // TODO: these need to be strdup'd
+            .name = strdup(name.u.s),
+            .author = strdup(author.u.s),
+            .description = strdup(description.u.s),
             .time = time.u.fp64,
             .difficultyData = difficultyData,
             .numDifficulties = numDifficulties,
@@ -446,6 +469,8 @@ void findScenarios() {
         cvector_push_back(*currentFileMetadata, metadata);
 
 cleanup:
+        toml_free(tomlParseResult);
+
         if (tomlFilePath != NULL) {
             free(tomlFilePath);
         }
@@ -504,6 +529,50 @@ void handlePublishScenario(Clay_ElementId elementId, Clay_PointerData pointerInf
         );
         submitScenario(&submitScenarioInfo);
     }
+}
+
+int parseFindScenariosResponse() {
+    cJSON *root = cJSON_Parse(findScenariosInfo.requestData.response.buf);
+    if (!cJSON_IsArray(root)) {
+        fprintf(stderr, "Invalid JSON: expected array\n");
+        cJSON_Delete(root);
+        return -1;
+    }
+
+    freeMetadata();
+
+    int count = cJSON_GetArraySize(root);
+
+    for (int i = 0; i < count; i++) {
+        cJSON *item = cJSON_GetArrayItem(root, i);
+        if (!cJSON_IsObject(item)) continue;
+
+        cJSON *name = cJSON_GetObjectItem(item, "name");
+        cJSON *author = cJSON_GetObjectItem(item, "author");
+        cJSON *time = cJSON_GetObjectItem(item, "time");
+        cJSON *uuid = cJSON_GetObjectItem(item, "uuid");
+
+        // Basic validation
+        if (
+            !cJSON_IsString(name)
+            || !cJSON_IsString(author)
+            || !cJSON_IsNumber(time)
+            || !cJSON_IsString(uuid)
+        ) {
+            continue;
+        }
+
+        ScenarioMetadata newMetadata;
+        newMetadata.name = strdup(name->valuestring);
+        newMetadata.author = strdup(author->valuestring);
+        newMetadata.time = time->valuedouble;
+        cvector_push_back(onlineFileMetadata, newMetadata);
+
+        cvector_push_back(onlineFileUuids, strdup(uuid->valuestring));
+    }
+
+    cJSON_Delete(root);
+    return 0;
 }
 
 // TODO: refer to comment in post_scenario.c
@@ -601,9 +670,46 @@ void renderScenarioSelectScreen(void) {
                 },
             }) {
                 // TODO: make this list scrollable with arrow keys
-                size_t bound = cvector_size(*currentFileMetadata);
-                for (size_t i = 0; i < bound; i++) {
-                    RenderScenarioCard(i);
+                bool shouldRender = false;
+                if (currentScenarioTab == ONLINE_SCENARIOS) {
+                    // TODO: replace this check with inProgress
+                    if (!findScenariosInProgress) {
+                        shouldRender = true;
+                    } else {
+                        bool requestFinished;
+                        mtx_lock(&findScenariosInfo.requestData.mutex);
+                        requestFinished = findScenariosInfo.requestData.finished;
+                        mtx_unlock(&findScenariosInfo.requestData.mutex);
+                        if (requestFinished) {
+                            parseFindScenariosResponse();
+                            findScenariosInProgress = false;
+                            shouldRender = true;
+                        }
+                    }
+                } else {
+                    shouldRender = true;
+                }
+                if (shouldRender) {
+                    size_t bound = cvector_size(*currentFileMetadata);
+                    for (size_t i = 0; i < bound; i++) {
+                        RenderScenarioCard(i);
+                    }
+                } else {
+                    CLAY({
+                        .layout = {
+                            .sizing = {
+                                .width = CLAY_SIZING_GROW(0),
+                            },
+                            .childAlignment = {
+                                .x = CLAY_ALIGN_X_CENTER,
+                            },
+                        },
+                    }) {
+                        CLAY_TEXT(
+                            CLAY_STRING("Loading..."),
+                            &largeTextConfig
+                        );
+                    }
                 }
             }
 

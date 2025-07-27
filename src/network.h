@@ -15,7 +15,15 @@ struct StrBuf {
 };
 typedef struct StrBuf StrBuf;
 
-void freeStrBuf(StrBuf *data);
+struct RequestData {
+    mtx_t mutex;
+    StrBuf response;
+    bool finished;
+};
+typedef struct RequestData RequestData;
+
+void initRequestData(RequestData *data);
+void destroyRequestData(RequestData *data);
 
 extern char *authToken;
 extern char *username;
@@ -35,13 +43,11 @@ enum AuthRequestType {
 typedef enum AuthRequestType AuthRequestType;
 
 struct AuthRequestInfo {
-    mtx_t mutex;
     AuthRequestType type;
     const char *username;
     const char *email;
     const char *password;
-    StrBuf response;
-    bool finished;
+    RequestData requestData;
 };
 typedef struct AuthRequestInfo AuthRequestInfo;
 
@@ -59,14 +65,12 @@ int sendAuthRequest(AuthRequestInfo *info);
 // Submit scenario (/createScenario)
 // =================================
 struct SubmitScenarioInfo {
-    mtx_t mutex;
     const char *name;
     const char *author;
     double time;
     const char *infoPath;
     const char *scriptPath;
-    StrBuf response;
-    bool finished;
+    RequestData requestData;
 };
 typedef struct SubmitScenarioInfo SubmitScenarioInfo;
 
@@ -80,5 +84,19 @@ SubmitScenarioInfo createSubmitScenarioInfo(
 void cleanupSubmitScenarioInfo(SubmitScenarioInfo *info);
 
 int submitScenario(SubmitScenarioInfo *info);
+
+// ===============================
+// Find scenarios (/findScenarios)
+// ===============================
+struct FindScenariosInfo {
+    const char *query;
+    RequestData requestData;
+};
+typedef struct FindScenariosInfo FindScenariosInfo;
+
+FindScenariosInfo createFindScenariosInfo(const char *query);
+void cleanupFindScenariosInfo(FindScenariosInfo *info);
+
+int sendFindScenariosRequest(FindScenariosInfo *info);
 
 #endif /* NETWORK_H */

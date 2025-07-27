@@ -41,9 +41,9 @@ typedef struct LuaApiVersion LuaApiVersion;
 
 struct ScenarioMetadata {
     char *path;
-    const char *name;
-    const char *author;
-    const char *description;
+    char *name;
+    char *author;
+    char *description;
     double time;
     double titleOffset;
     double authorOffset;

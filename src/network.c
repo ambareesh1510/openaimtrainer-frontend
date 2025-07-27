@@ -54,8 +54,17 @@ void extractAuthDetails(StrBuf response, char **tokenBuf, char **usernameBuf) {
     cJSON_Delete(json);
 }
 
-void freeStrBuf(StrBuf *data) {
-    free(data->buf);
+void initRequestData(RequestData *data) {
+    mtx_init(&data->mutex, mtx_plain);
+    data->finished = false;
+    if (data->response.buf != NULL) {
+        free(data->response.buf);
+    }
+    data->response.len = 0;
+}
+
+void destroyRequestData(RequestData *data) {
+    mtx_destroy(&data->mutex);
 }
 
 size_t writeToStrBufCallback(
@@ -96,17 +105,13 @@ AuthRequestInfo createAuthRequestInfo(
         .username = username,
         .email = email,
         .password = password,
-        .finished = true,
     };
-    mtx_init(&info.mutex, mtx_plain);
+    initRequestData(&info.requestData);
     return info;
 }
 
 void cleanupAuthRequestInfo(AuthRequestInfo *info) {
-    if (info->response.buf != NULL) {
-        free(info->response.buf);
-    }
-    mtx_destroy(&info->mutex);
+    destroyRequestData(&info->requestData);
 }
 
 int sendAuthRequestThread(void *arg) {
@@ -142,12 +147,12 @@ int sendAuthRequestThread(void *arg) {
         fprintf(stderr, "ERROR: UNKNOWN AUTH REQUEST TYPE\n");
     }
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeToStrBufCallback);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &info->response);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &info->requestData.response);
     curl_easy_setopt(curl, CURLOPT_MIMEPOST, mime);
 
-    mtx_lock(&info->mutex);
-    info->finished = false;
-    mtx_unlock(&info->mutex);
+    mtx_lock(&info->requestData.mutex);
+    info->requestData.finished = false;
+    mtx_unlock(&info->requestData.mutex);
 
     CURLcode res = curl_easy_perform(curl);
     // TODO: set return value properly here
@@ -157,11 +162,12 @@ int sendAuthRequestThread(void *arg) {
 
 bail:
     curl_easy_cleanup(curl);
-    mtx_lock(&info->mutex);
-    extractAuthDetails(info->response, &authToken, &username);
-    info->finished = true;
-    mtx_unlock(&info->mutex);
-    printf("/signup OR /login: %s\n", info->response.buf);
+    mtx_lock(&info->requestData.mutex);
+    // TODO: this is not thread safe
+    extractAuthDetails(info->requestData.response, &authToken, &username);
+    info->requestData.finished = true;
+    mtx_unlock(&info->requestData.mutex);
+    printf("/signup OR /login: %s\n", info->requestData.response.buf);
     return 0;
 }
 
@@ -172,6 +178,7 @@ int sendAuthRequest(AuthRequestInfo *info) {
         return -1;
     }
     thrd_detach(threadId);
+    return 0;
 }
 
 // =================================
@@ -191,17 +198,13 @@ SubmitScenarioInfo createSubmitScenarioInfo(
         .time = time,
         .infoPath = infoPath,
         .scriptPath = scriptPath,
-        .finished = true,
     };
-    mtx_init(&info.mutex, mtx_plain);
+    initRequestData(&info.requestData);
     return info;
 }
 
 void cleanupSubmitScenarioInfo(SubmitScenarioInfo *info) {
-    if (info->response.buf != NULL) {
-        free(info->response.buf);
-    }
-    mtx_destroy(&info->mutex);
+    destroyRequestData(&info->requestData);
 }
 
 int submitScenarioThread(void *arg) {
@@ -247,12 +250,12 @@ int submitScenarioThread(void *arg) {
 
     curl_easy_setopt(curl, CURLOPT_URL, API_URL "/createScenario");
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeToStrBufCallback);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &info->response);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &info->requestData.response);
     curl_easy_setopt(curl, CURLOPT_MIMEPOST, mime);
 
-    mtx_lock(&info->mutex);
-    info->finished = false;
-    mtx_unlock(&info->mutex);
+    mtx_lock(&info->requestData.mutex);
+    info->requestData.finished = false;
+    mtx_unlock(&info->requestData.mutex);
 
     CURLcode res = curl_easy_perform(curl);
     // TODO: set return value properly here
@@ -262,10 +265,10 @@ int submitScenarioThread(void *arg) {
 
 bail:
     curl_easy_cleanup(curl);
-    mtx_lock(&info->mutex);
-    info->finished = true;
-    mtx_unlock(&info->mutex);
-    printf("/createScenario: %s\n", info->response.buf);
+    mtx_lock(&info->requestData.mutex);
+    info->requestData.finished = true;
+    mtx_unlock(&info->requestData.mutex);
+    printf("/createScenario: %s\n", info->requestData.response.buf);
     return 0;
 }
 
@@ -276,4 +279,69 @@ int submitScenario(SubmitScenarioInfo *info) {
         return -1;
     }
     thrd_detach(threadId);
+    return 0;
+}
+
+// ===============================
+// Find scenarios (/findScenarios)
+// ===============================
+
+FindScenariosInfo createFindScenariosInfo(const char *query) {
+    FindScenariosInfo info = {
+        .query = query,
+    };
+    initRequestData(&info.requestData);
+    return info;
+}
+void cleanupFindScenariosInfo(FindScenariosInfo *info) {
+    destroyRequestData(&info->requestData);
+}
+
+int sendFindScenariosRequestThread(void *arg) {
+    CURL *curl = curl_easy_init();
+    if (curl == NULL) {
+        return -1;
+    }
+
+    FindScenariosInfo *info = (FindScenariosInfo *) arg;
+
+    curl_mime *mime = curl_mime_init(curl);
+    curl_mimepart *part;
+
+    part = curl_mime_addpart(mime);
+    curl_mime_name(part, "query");
+    curl_mime_data(part, info->query, CURL_ZERO_TERMINATED);
+
+    curl_easy_setopt(curl, CURLOPT_URL, API_URL "/findScenarios");
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeToStrBufCallback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &info->requestData.response);
+    curl_easy_setopt(curl, CURLOPT_MIMEPOST, mime);
+
+    mtx_lock(&info->requestData.mutex);
+    info->requestData.finished = false;
+    mtx_unlock(&info->requestData.mutex);
+
+    CURLcode res = curl_easy_perform(curl);
+    // TODO: set return value properly here
+    if (res != CURLE_OK) {
+        goto bail;
+    }
+
+bail:
+    curl_easy_cleanup(curl);
+    mtx_lock(&info->requestData.mutex);
+    info->requestData.finished = true;
+    mtx_unlock(&info->requestData.mutex);
+    printf("/findScenarios: %s\n", info->requestData.response.buf);
+    return 0;
+}
+
+int sendFindScenariosRequest(FindScenariosInfo *info) {
+    thrd_t threadId;
+    int res = thrd_create(&threadId, sendFindScenariosRequestThread, info);
+    if (res != thrd_success) {
+        return -1;
+    }
+    thrd_detach(threadId);
+    return 0;
 }
