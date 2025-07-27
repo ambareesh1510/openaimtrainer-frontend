@@ -87,9 +87,9 @@ size_t writeToStrBufCallback(
 
 AuthRequestInfo createAuthRequestInfo(
     AuthRequestType type,
-    char *username,
-    char *email,
-    char *password
+    const char *username,
+    const char *email,
+    const char *password
 ) {
     AuthRequestInfo info = {
         .type = type,
@@ -179,11 +179,11 @@ int sendAuthRequest(AuthRequestInfo *info) {
 // =================================
 
 SubmitScenarioInfo createSubmitScenarioInfo(
-    char *name,
-    char *author,
+    const char *name,
+    const char *author,
     double time,
-    char *infoPath,
-    char *scriptPath
+    const char *infoPath,
+    const char *scriptPath
 ) {
     SubmitScenarioInfo info = {
         .name = name,
@@ -238,6 +238,13 @@ int submitScenarioThread(void *arg) {
     curl_mime_name(part, "script.lua");
     curl_mime_filedata(part, info->scriptPath);
 
+    struct curl_slist *headers = NULL;
+    char authHeader[512];
+    snprintf(authHeader, sizeof(authHeader), "Authorization: %s", authToken);
+    printf("Sending header: %s\n", authHeader);
+    headers = curl_slist_append(headers, authHeader);
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+
     curl_easy_setopt(curl, CURLOPT_URL, API_URL "/createScenario");
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeToStrBufCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &info->response);
@@ -258,6 +265,7 @@ bail:
     mtx_lock(&info->mutex);
     info->finished = true;
     mtx_unlock(&info->mutex);
+    printf("/createScenario: %s\n", info->response.buf);
     return 0;
 }
 

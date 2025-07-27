@@ -37,9 +37,9 @@ typedef enum AuthRequestType AuthRequestType;
 struct AuthRequestInfo {
     mtx_t mutex;
     AuthRequestType type;
-    char *username;
-    char *email;
-    char *password;
+    const char *username;
+    const char *email;
+    const char *password;
     StrBuf response;
     bool finished;
 };
@@ -47,9 +47,9 @@ typedef struct AuthRequestInfo AuthRequestInfo;
 
 AuthRequestInfo createAuthRequestInfo(
     AuthRequestType type,
-    char *username,
-    char *email,
-    char *password
+    const char *username,
+    const char *email,
+    const char *password
 );
 void cleanupAuthRequestInfo(AuthRequestInfo *info);
 
@@ -60,22 +60,22 @@ int sendAuthRequest(AuthRequestInfo *info);
 // =================================
 struct SubmitScenarioInfo {
     mtx_t mutex;
-    char *name;
-    char *author;
+    const char *name;
+    const char *author;
     double time;
-    char *infoPath;
-    char *scriptPath;
+    const char *infoPath;
+    const char *scriptPath;
     StrBuf response;
     bool finished;
 };
 typedef struct SubmitScenarioInfo SubmitScenarioInfo;
 
 SubmitScenarioInfo createSubmitScenarioInfo(
-    char *name,
-    char *author,
+    const char *name,
+    const char *author,
     double time,
-    char *infoPath,
-    char *scriptPath
+    const char *infoPath,
+    const char *scriptPath
 );
 void cleanupSubmitScenarioInfo(SubmitScenarioInfo *info);
 

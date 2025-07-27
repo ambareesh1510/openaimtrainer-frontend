@@ -4,6 +4,7 @@
 #include "fuzzy_match/fuzzy_match.h"
 
 #include "save_scores.h"
+#include "network.h"
 
 int selectedScenarioIndex = -1;
 int selectedDifficulty = -1;
@@ -478,6 +479,29 @@ void handleStartScenario(Clay_ElementId elementId, Clay_PointerData pointerInfo,
     }
 }
 
+SubmitScenarioInfo submitScenarioInfo;
+
+void handlePublishScenario(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        // TODO: remove this check? this should never happen
+        if (selectedScenarioIndex < 0 || selectedScenarioIndex > cvector_size(myFileMetadata)) {
+            return;
+        }
+
+        cleanupSubmitScenarioInfo(&submitScenarioInfo);
+
+        ScenarioMetadata metadata = myFileMetadata[selectedScenarioIndex];
+        submitScenarioInfo = createSubmitScenarioInfo(
+            metadata.name,
+            metadata.author,
+            metadata.time,
+            TextFormat("%s/info.toml", GetDirectoryPath(metadata.path)),
+            metadata.path
+        );
+        submitScenario(&submitScenarioInfo);
+    }
+}
+
 // TODO: refer to comment in post_scenario.c
 CustomLayoutElementData scenarioSelectScoreGraphData = {
     .type = DRAW_PROGRESSION_GRAPH,
@@ -727,7 +751,6 @@ void renderScenarioSelectScreen(void) {
                     },
                 }) {}
                 CLAY({
-                    .id = CLAY_ID("StartScenario"),
                     .backgroundColor = Clay_Hovered()
                         ? COLOR_DARK_BLUE
                         : COLOR_LIGHT_GRAY,
@@ -737,6 +760,20 @@ void renderScenarioSelectScreen(void) {
                 }) {
                     Clay_OnHover(handleStartScenario, 0);
                     CLAY_TEXT(CLAY_STRING("Start Scenario"), &normalTextConfig);
+                }
+
+                if (authToken != NULL) {
+                    CLAY({
+                        .backgroundColor = Clay_Hovered()
+                            ? COLOR_DARK_BLUE
+                            : COLOR_LIGHT_GRAY,
+                        .layout = {
+                            .padding = { 5, 5, 5, 5 },
+                        },
+                    }) {
+                        Clay_OnHover(handlePublishScenario, 0);
+                        CLAY_TEXT(CLAY_STRING("Publish Scenario"), &normalTextConfig);
+                    }
                 }
             }
         }
