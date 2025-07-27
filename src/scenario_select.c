@@ -20,35 +20,29 @@ enum {
     MY_SCENARIOS,
     DOWNLOADED_SCENARIOS,
     ONLINE_SCENARIOS,
-} currentScenarioTab;
+} currentScenarioTab = MY_SCENARIOS;
 
 cvector_vector_type(ScenarioMetadata) myFileMetadata = NULL;
 cvector_vector_type(ScenarioMetadata) downloadedFileMetadata = NULL;
 cvector_vector_type(ScenarioMetadata) onlineFileMetadata = NULL;
+
+cvector_vector_type(ScenarioMetadata) *currentFileMetadata = &myFileMetadata;
 
 int compareFuzzyScore(const void *a, const void *b) {
     ScenarioMetadata *metadataA = (ScenarioMetadata *) a;
     ScenarioMetadata *metadataB = (ScenarioMetadata *) b;
     int32_t scoreA = fuzzy_match(scenarioSearchData.str, metadataA->name);
     int32_t scoreB = fuzzy_match(scenarioSearchData.str, metadataB->name);
-    // printf("%d\n", scoreA - scoreB);
     return scoreA - scoreB;
 }
 
 void fuzzySortCurrentMetadataList(void) {
     if (currentScenarioTab == ONLINE_SCENARIOS) {
         return;
-    } else if (currentScenarioTab == MY_SCENARIOS) {
+    } else {
         qsort(
-            myFileMetadata,
-            cvector_size(myFileMetadata),
-            sizeof(ScenarioMetadata),
-            compareFuzzyScore
-        );
-    } else if (currentScenarioTab == DOWNLOADED_SCENARIOS) {
-        qsort(
-            downloadedFileMetadata,
-            cvector_size(downloadedFileMetadata),
+            *currentFileMetadata,
+            cvector_size(*currentFileMetadata),
             sizeof(ScenarioMetadata),
             compareFuzzyScore
         );
@@ -59,7 +53,7 @@ void handleSelectScenario(Clay_ElementId elementId, Clay_PointerData pointerInfo
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         selectedScenarioIndex = (int) userData;
         selectedDifficulty = 0;
-        loadSavedScores(myFileMetadata[selectedScenarioIndex]);
+        loadSavedScores((*currentFileMetadata)[selectedScenarioIndex]);
     }
 }
 
@@ -72,6 +66,14 @@ void handleSelectDifficulty(Clay_ElementId elementId, Clay_PointerData pointerIn
 void handleSwitchToScenariosTab(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         currentScenarioTab = userData;
+        if (userData == MY_SCENARIOS) {
+            currentFileMetadata = &myFileMetadata;
+        } else if (userData == DOWNLOADED_SCENARIOS) {
+            currentFileMetadata = &downloadedFileMetadata;
+        } else if (userData == ONLINE_SCENARIOS) {
+            currentFileMetadata = &onlineFileMetadata;
+        }
+        findScenarios();
     }
 }
 
@@ -96,15 +98,8 @@ void RenderScenarioCard(int index) {
         Clay_ElementId nameId = CLAY_IDI("ScenarioCard_Name", index);
         Clay_ElementId authorId = CLAY_IDI("ScenarioCard_Author", index);
         Clay_ElementId timeId = CLAY_IDI("ScenarioCard_Time", index);
-        ScenarioMetadata *metadata;
+        ScenarioMetadata *metadata = cvector_at(*currentFileMetadata, index);
 
-        if (currentScenarioTab == MY_SCENARIOS) {
-            metadata = cvector_at(myFileMetadata, index);
-        } else if (currentScenarioTab == DOWNLOADED_SCENARIOS) {
-            metadata = cvector_at(downloadedFileMetadata, index);
-        } else if (currentScenarioTab == ONLINE_SCENARIOS) {
-            metadata = cvector_at(onlineFileMetadata, index);
-        }
         Clay_OnHover(handleSelectScenario, index);
         CLAY({
             .id = nameId,
@@ -270,19 +265,28 @@ bail:
 }
 
 void findScenarios() {
-    selectedScenarioIndex = -1;
-    for (size_t i = 0; i < cvector_size(myFileMetadata); i++) {
-        free(myFileMetadata[i].path);
-        for (size_t j = 0; j < myFileMetadata[i].numDifficulties; j++) {
-            free(myFileMetadata[i].difficultyData[j].difficultyName);
-        }
-        free(myFileMetadata[i].difficultyData);
+    if (currentScenarioTab == ONLINE_SCENARIOS) {
+        fprintf(stderr, "Error: findScenarios called on ONLINE_SCENARIOS!\n");
+        return;
     }
-    cvector_clear(myFileMetadata);
+    selectedScenarioIndex = -1;
+    for (size_t i = 0; i < cvector_size(*currentFileMetadata); i++) {
+        free((*currentFileMetadata)[i].path);
+        for (size_t j = 0; j < (*currentFileMetadata)[i].numDifficulties; j++) {
+            free((*currentFileMetadata)[i].difficultyData[j].difficultyName);
+        }
+        free((*currentFileMetadata)[i].difficultyData);
+    }
+    cvector_clear(*currentFileMetadata);
 
 
     // TODO: don't hardcode
-    FilePathList dir = LoadDirectoryFiles("../../scenarios");
+    FilePathList dir;
+    if (currentScenarioTab == MY_SCENARIOS) {
+        dir = LoadDirectoryFiles("../../scenarios");
+    } else if (currentScenarioTab == DOWNLOADED_SCENARIOS) {
+        dir = LoadDirectoryFiles("../../downloaded");
+    }
 
     // TODO: lazy loading
     for (size_t i = 0; i < dir.count; i++) {
@@ -439,7 +443,7 @@ void findScenarios() {
             .apiVersion = apiVersion_,
         };
 
-        cvector_push_back(myFileMetadata, metadata);
+        cvector_push_back(*currentFileMetadata, metadata);
 
 cleanup:
         if (tomlFilePath != NULL) {
@@ -462,16 +466,16 @@ void handleReloadScenarios(Clay_ElementId elementId, Clay_PointerData pointerInf
 void handleStartScenario(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         char *difficultyName = NULL;
-        if (myFileMetadata[selectedScenarioIndex].numDifficulties != 0) {
-            difficultyName = myFileMetadata[selectedScenarioIndex].difficultyData[selectedDifficulty].difficultyName;
+        if ((*currentFileMetadata)[selectedScenarioIndex].numDifficulties != 0) {
+            difficultyName = (*currentFileMetadata)[selectedScenarioIndex].difficultyData[selectedDifficulty].difficultyName;
         }
         loadLuaScenario(
-            myFileMetadata[selectedScenarioIndex],
+            (*currentFileMetadata)[selectedScenarioIndex],
             selectedDifficulty,
             difficultyName
         );
         if (scenarioResults.valid) {
-            loadSavedScores(myFileMetadata[selectedScenarioIndex]);
+            loadSavedScores((*currentFileMetadata)[selectedScenarioIndex]);
             uiState = POST_SCENARIO;
         } else {
             uiState = SCENARIO_SELECT;
@@ -597,14 +601,7 @@ void renderScenarioSelectScreen(void) {
                 },
             }) {
                 // TODO: make this list scrollable with arrow keys
-                size_t bound = 0;
-                if (currentScenarioTab == MY_SCENARIOS) {
-                    bound = cvector_size(myFileMetadata);
-                } else if (currentScenarioTab == DOWNLOADED_SCENARIOS) {
-                    bound = cvector_size(downloadedFileMetadata);
-                } else if (currentScenarioTab == ONLINE_SCENARIOS) {
-                    bound = cvector_size(onlineFileMetadata);
-                }
+                size_t bound = cvector_size(*currentFileMetadata);
                 for (size_t i = 0; i < bound; i++) {
                     RenderScenarioCard(i);
                 }
@@ -665,7 +662,7 @@ void renderScenarioSelectScreen(void) {
                     CLAY_TEXT(CLAY_STRING("No scenario selected"), CLAY_TEXT_CONFIG(largeTextConfig));
                 }
             } else {
-                ScenarioMetadata s = myFileMetadata[selectedScenarioIndex];
+                ScenarioMetadata s = (*currentFileMetadata)[selectedScenarioIndex];
                 CLAY_TEXT(
                     CLAY_DYNSTR(s.name),
                     CLAY_TEXT_CONFIG(largeTextConfig)
