@@ -57,8 +57,10 @@ void extractAuthDetails(StrBuf response, char **tokenBuf, char **usernameBuf) {
 void initRequestData(RequestData *data) {
     mtx_init(&data->mutex, mtx_plain);
     data->finished = false;
+    data->dispatched = false;
     if (data->response.buf != NULL) {
         free(data->response.buf);
+        data->response.buf = NULL;
     }
     data->response.len = 0;
 }
@@ -178,6 +180,7 @@ int sendAuthRequest(AuthRequestInfo *info) {
         return -1;
     }
     thrd_detach(threadId);
+    info->requestData.dispatched = true;
     return 0;
 }
 
@@ -279,6 +282,7 @@ int submitScenario(SubmitScenarioInfo *info) {
         return -1;
     }
     thrd_detach(threadId);
+    info->requestData.dispatched = true;
     return 0;
 }
 
@@ -343,5 +347,6 @@ int sendFindScenariosRequest(FindScenariosInfo *info) {
         return -1;
     }
     thrd_detach(threadId);
+    info->requestData.dispatched = true;
     return 0;
 }

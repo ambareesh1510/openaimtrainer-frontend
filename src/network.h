@@ -18,6 +18,7 @@ typedef struct StrBuf StrBuf;
 struct RequestData {
     mtx_t mutex;
     StrBuf response;
+    bool dispatched;
     bool finished;
 };
 typedef struct RequestData RequestData;

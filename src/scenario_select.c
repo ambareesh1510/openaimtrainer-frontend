@@ -297,7 +297,7 @@ void findScenarios() {
     selectedScenarioIndex = -1;
 
     if (currentScenarioTab == ONLINE_SCENARIOS) {
-        if (*currentFileMetadata == NULL) {
+        if (*currentFileMetadata == NULL && !findScenariosInfo.requestData.dispatched) {
             cleanupFindScenariosInfo(&findScenariosInfo);
             findScenariosInfo = createFindScenariosInfo(scenarioSearchData.str);
             findScenariosInProgress = true;
@@ -673,7 +673,8 @@ void renderScenarioSelectScreen(void) {
                 bool shouldRender = false;
                 if (currentScenarioTab == ONLINE_SCENARIOS) {
                     // TODO: replace this check with inProgress
-                    if (!findScenariosInProgress) {
+                    // if (!findScenariosInProgress) {
+                    if (!findScenariosInfo.requestData.dispatched) {
                         shouldRender = true;
                     } else {
                         bool requestFinished;
@@ -682,7 +683,7 @@ void renderScenarioSelectScreen(void) {
                         mtx_unlock(&findScenariosInfo.requestData.mutex);
                         if (requestFinished) {
                             parseFindScenariosResponse();
-                            findScenariosInProgress = false;
+                            findScenariosInfo.requestData.dispatched = false;
                             shouldRender = true;
                         }
                     }
@@ -690,8 +691,11 @@ void renderScenarioSelectScreen(void) {
                     shouldRender = true;
                 }
                 if (shouldRender) {
-                    size_t bound = cvector_size(*currentFileMetadata);
-                    for (size_t i = 0; i < bound; i++) {
+                    for (
+                        size_t i = 0;
+                        i < cvector_size(*currentFileMetadata);
+                        i++
+                    ) {
                         RenderScenarioCard(i);
                     }
                 } else {
