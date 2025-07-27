@@ -173,10 +173,10 @@ void renderSlider(SliderData *data, float controlWidth) {
                     .height = CLAY_SIZING_FIXED(30),
                 },
             },
-            .border = {
-                .width = { 3, 3, 3, 3 },
-                .color = COLOR_BLACK,
-            },
+            // .border = {
+            //     .width = { 3, 3, 3, 3 },
+            //     .color = COLOR_BLACK,
+            // },
             .backgroundColor = COLOR_WHITE,
         }) {
         }
@@ -231,12 +231,55 @@ void renderTextBox(TextBoxData *data) {
     if (elementWidth < scrollWidth) {
         alignX = CLAY_ALIGN_X_RIGHT;
     }
+
+    if (!data->focused) {
+        data->blink = 0.0f;
+        data->backspaceDelay = 0.0f;
+    } else {
+        data->blink += GetFrameTime();
+    }
+
+    if (data->focused) {
+        int key = GetCharPressed();
+
+        while (key > 0) {
+            data->blink = 0.0f;
+            if (key < 32 || key > 125) {
+                continue;
+            }
+            if (data->len != TEXT_BOX_MAX_LEN) {
+                data->str[data->len] = (char) key;
+                data->len++;
+            }
+
+            key = GetCharPressed();
+        }
+
+        if (IsKeyPressed(KEY_BACKSPACE)) {
+            data->backspaceDelay = 0.0f;
+            data->firstBackspace = true;
+        } else {
+            data->backspaceDelay = MAX(data->backspaceDelay - GetFrameTime(), 0.0f);
+        }
+
+        if (IsKeyDown(KEY_BACKSPACE) && data->len != 0 && FloatEquals(data->backspaceDelay, 0.0f)) {
+            data->len--;
+            data->str[data->len] = '\0';
+            if (data->firstBackspace) {
+                data->backspaceDelay = 0.5f;
+            } else {
+                data->backspaceDelay = 0.02f;
+            }
+            data->firstBackspace = false;
+            data->blink = 0.0f;
+        }
+    }
+
     CLAY({
-        .id = textBoxId,
         .layout = {
             .sizing = {
-                .width = CLAY_SIZING_GROW(0),
-                .height = CLAY_SIZING_GROW(0),
+                .width = CLAY_SIZING_PERCENT(1.0),
+                .height = CLAY_SIZING_PERCENT(1.0),
             },
             .padding = { 5, 5, 5, 5 },
             .childAlignment = {
@@ -248,7 +291,7 @@ void renderTextBox(TextBoxData *data) {
         .border = {
             .width = { 1, 1, 1, 1 },
             .color = data->focused
-                ? COLOR_WHITE
+                ? (Clay_Color) { 90, 90, 90, 255 }
                 : COLOR_LIGHT_GRAY,
         },
         .clip = {
@@ -257,72 +300,86 @@ void renderTextBox(TextBoxData *data) {
     }) {
         Clay_OnHover(handleClickTextBox, (intptr_t) data);
 
-        if (!data->focused || data->len == 0) {
-            data->blink = 0.0f;
-            data->backspaceDelay = 0.0f;
-        } else {
-            data->blink += GetFrameTime();
-        }
-
-        if (data->focused) {
-            int key = GetCharPressed();
-
-            while (key > 0) {
-                data->blink = 0.0f;
-                if (key < 32 || key > 125) {
-                    continue;
-                }
-                if (data->len != TEXT_BOX_MAX_LEN) {
-                    data->str[data->len] = (char) key;
-                    data->len++;
-                }
-
-                key = GetCharPressed();
-            }
-
-            if (IsKeyPressed(KEY_BACKSPACE)) {
-                data->backspaceDelay = 0.0f;
-            } else {
-                data->backspaceDelay = MAX(data->backspaceDelay - GetFrameTime(), 0.0f);
-            }
-
-            if (IsKeyDown(KEY_BACKSPACE) && data->len != 0 && FloatEquals(data->backspaceDelay, 0.0f)) {
-                data->len--;
-                data->str[data->len] = '\0';
-                data->backspaceDelay = 0.02f;
-            }
-        }
-
-        Clay_String textBoxString;
         Clay_TextElementConfig textBoxConfig = largeTextConfig;
+
         if (data->len == 0 && data->placeholder != NULL) {
-            textBoxString = (Clay_String) {
-                .isStaticallyAllocated = true,
-                .length = data->placeholderLen,
-                .chars = data->placeholder,
-            };
             textBoxConfig.textColor = COLOR_LIGHT_GRAY;
-        } else {
-            textBoxString = (Clay_String) {
-                .isStaticallyAllocated = false,
-                .length = data->len,
-            };
-            if (data->obfuscated) {
-                textBoxString.chars = obfuscatedText;
-            } else {
-                textBoxString.chars = data->str;
-            }
-        }
-        CLAY_TEXT(textBoxString, CLAY_TEXT_CONFIG(textBoxConfig));
-        if (
-            data->focused
-            && data->len != 0
-            && (int) (data->blink / 0.5) % 2 == 0
-        ) {
         } else {
             textBoxConfig.textColor = COLOR_BLANK;
         }
-        CLAY_TEXT(CLAY_STRING("|"), CLAY_TEXT_CONFIG(textBoxConfig));
+        Clay_String placeholderString = (Clay_String) {
+            .isStaticallyAllocated = true,
+            .length = data->placeholderLen,
+            .chars = data->placeholder,
+        };
+
+        CLAY({
+            .layout = {
+                .sizing = {
+                    .width = CLAY_SIZING_GROW(0),
+                    .height = CLAY_SIZING_GROW(0),
+                },
+                .padding = { 5, 5, 5, 5 },
+                .childAlignment = {
+                    .x = alignX,
+                    .y = CLAY_ALIGN_Y_CENTER,
+                }
+            },
+            .clip = {
+                .horizontal = true,
+            },
+            .floating = {
+                .attachTo = CLAY_ATTACH_TO_PARENT
+            },
+        }) {
+            Clay_OnHover(handleClickTextBox, (intptr_t) data);
+            CLAY_TEXT(placeholderString, CLAY_TEXT_CONFIG(textBoxConfig));
+        }
+
+        Clay_String textBoxString = (Clay_String) {
+            .isStaticallyAllocated = false,
+            .length = data->len,
+        };
+        if (data->obfuscated) {
+            textBoxString.chars = obfuscatedText;
+        } else {
+            textBoxString.chars = data->str;
+        }
+        textBoxConfig.textColor = COLOR_WHITE;
+
+        CLAY({
+        .id = textBoxId,
+            .layout = {
+                .sizing = {
+                    .width = CLAY_SIZING_GROW(0),
+                    .height = CLAY_SIZING_GROW(0),
+                },
+                .padding = { 5, 5, 5, 5 },
+                .childAlignment = {
+                    .x = alignX,
+                    .y = CLAY_ALIGN_Y_CENTER,
+                }
+            },
+            .clip = {
+                .horizontal = true,
+            },
+            .floating = {
+                .attachTo = CLAY_ATTACH_TO_PARENT
+            },
+        }) {
+            Clay_OnHover(handleClickTextBox, (intptr_t) data);
+            CLAY_TEXT(textBoxString, CLAY_TEXT_CONFIG(textBoxConfig));
+
+            if (
+                data->focused
+                // && data->len != 0
+                && (int) (data->blink / 0.5) % 2 == 0
+            ) {
+            } else {
+                textBoxConfig.textColor = COLOR_BLANK;
+            }
+            CLAY_TEXT(CLAY_STRING("|"), CLAY_TEXT_CONFIG(textBoxConfig));
+        }
 
     }
 }
@@ -331,7 +388,7 @@ void handleToScenarioSelect(Clay_ElementId elementId, Clay_PointerData pointerIn
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         uiState = SCENARIO_SELECT;
         if (selectedScenarioIndex >= 0) {
-            loadSavedScores(fileMetadata[selectedScenarioIndex]);
+            loadSavedScores(myFileMetadata[selectedScenarioIndex]);
         }
     }
 }

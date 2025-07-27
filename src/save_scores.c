@@ -63,6 +63,7 @@ int compareSavedScores(const void *a, const void *b) {
 // TODO: make this non-blocking?
 void loadSavedScores(ScenarioMetadata metadata) {
     cvector_clear(scoreFiles);
+    savedScoresModified = true;
 
     const char *scenarioDirPath = GetDirectoryPath(metadata.path);
     const char *scoresPath = TextFormat("%s/scores", scenarioDirPath);
@@ -110,7 +111,6 @@ bail_loop:
     }
     UnloadDirectoryFiles(scoreFileList);
     qsort(scoreFiles, cvector_size(scoreFiles), sizeof(SavedScore), compareSavedScores);
-    savedScoresModified = true;
 }
 
 void drawGraph(
@@ -129,6 +129,8 @@ void drawGraph(
 
     initShaders();
     BeginTextureMode(texture);
+
+    DrawRectangle(0, 0, w, h, clearColor);
 
     if (scoreFiles == NULL || cvector_size(scoreFiles) == 0) {
         const char *text = "No data";
@@ -159,7 +161,6 @@ void drawGraph(
 
     int numSubdivisions = 5;
 
-    DrawRectangle(0, 0, w, h, clearColor);
 
     DrawRectangle(marginX - 15, 0, 2, h - marginY + 10, auxColor);
 

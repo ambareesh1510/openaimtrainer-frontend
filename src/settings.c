@@ -185,7 +185,7 @@ void renderSettingsMenu(void) {
                         CLAY_TEXT(CLAY_STRING("Center dot radius"), &largeTextConfig);
                     }
                     CLAY({ .layout = { .sizing = { .width = CLAY_SIZING_PERCENT(0.7), }, .childGap = 16, .childAlignment = {.y = CLAY_ALIGN_Y_CENTER, }, }, }) {
-                        renderSlider(&centerDotRadiusSliderData, 0.05);
+                        renderSlider(&centerDotRadiusSliderData, 0.03);
                         const char *sliderPercent = TextFormat("%.0f", currentCrosshairConfig.centerDotRadius);
                         CLAY_TEXT(CLAY_DYNSTR(sliderPercent), &largeTextConfig);
                     }
@@ -237,7 +237,7 @@ void renderSettingsMenu(void) {
                         CLAY_TEXT(CLAY_STRING("Inner line length"), &largeTextConfig);
                     }
                     CLAY({ .layout = { .sizing = { .width = CLAY_SIZING_PERCENT(0.7), }, .childGap = 16, .childAlignment = {.y = CLAY_ALIGN_Y_CENTER, }, }, }) {
-                        renderSlider(&innerLineLengthSliderData, 0.05);
+                        renderSlider(&innerLineLengthSliderData, 0.03);
                         const char *sliderPercent = TextFormat("%.0f", currentCrosshairConfig.innerLineLength);
                         CLAY_TEXT(CLAY_DYNSTR(sliderPercent), &largeTextConfig);
                     }
@@ -256,7 +256,7 @@ void renderSettingsMenu(void) {
                         CLAY_TEXT(CLAY_STRING("Inner line width"), &largeTextConfig);
                     }
                     CLAY({ .layout = { .sizing = { .width = CLAY_SIZING_PERCENT(0.7), }, .childGap = 16, .childAlignment = {.y = CLAY_ALIGN_Y_CENTER, }, }, }) {
-                        renderSlider(&innerLineWidthSliderData, 0.05);
+                        renderSlider(&innerLineWidthSliderData, 0.03);
                         const char *sliderPercent = TextFormat("%.0f", currentCrosshairConfig.innerLineWidth);
                         CLAY_TEXT(CLAY_DYNSTR(sliderPercent), &largeTextConfig);
                     }
@@ -275,7 +275,7 @@ void renderSettingsMenu(void) {
                         CLAY_TEXT(CLAY_STRING("Inner line gap"), &largeTextConfig);
                     }
                     CLAY({ .layout = { .sizing = { .width = CLAY_SIZING_PERCENT(0.7), }, .childGap = 16, .childAlignment = {.y = CLAY_ALIGN_Y_CENTER, }, }, }) {
-                        renderSlider(&innerLineGapSliderData, 0.05);
+                        renderSlider(&innerLineGapSliderData, 0.03);
                         const char *sliderPercent = TextFormat("%.0f", currentCrosshairConfig.innerLineGap);
                         CLAY_TEXT(CLAY_DYNSTR(sliderPercent), &largeTextConfig);
                     }
@@ -327,7 +327,7 @@ void renderSettingsMenu(void) {
                         CLAY_TEXT(CLAY_STRING("Outer line length"), &largeTextConfig);
                     }
                     CLAY({ .layout = { .sizing = { .width = CLAY_SIZING_PERCENT(0.7), }, .childGap = 16, .childAlignment = {.y = CLAY_ALIGN_Y_CENTER, }, }, }) {
-                        renderSlider(&outerLineLengthSliderData, 0.05);
+                        renderSlider(&outerLineLengthSliderData, 0.03);
                         const char *sliderPercent = TextFormat("%.0f", currentCrosshairConfig.outerLineLength);
                         CLAY_TEXT(CLAY_DYNSTR(sliderPercent), &largeTextConfig);
                     }
@@ -346,7 +346,7 @@ void renderSettingsMenu(void) {
                         CLAY_TEXT(CLAY_STRING("Outer line width"), &largeTextConfig);
                     }
                     CLAY({ .layout = { .sizing = { .width = CLAY_SIZING_PERCENT(0.7), }, .childGap = 16, .childAlignment = {.y = CLAY_ALIGN_Y_CENTER, }, }, }) {
-                        renderSlider(&outerLineWidthSliderData, 0.05);
+                        renderSlider(&outerLineWidthSliderData, 0.03);
                         const char *sliderPercent = TextFormat("%.0f", currentCrosshairConfig.outerLineWidth);
                         CLAY_TEXT(CLAY_DYNSTR(sliderPercent), &largeTextConfig);
                     }
@@ -365,7 +365,7 @@ void renderSettingsMenu(void) {
                         CLAY_TEXT(CLAY_STRING("Outer line gap"), &largeTextConfig);
                     }
                     CLAY({ .layout = { .sizing = { .width = CLAY_SIZING_PERCENT(0.7), }, .childGap = 16, .childAlignment = {.y = CLAY_ALIGN_Y_CENTER, }, }, }) {
-                        renderSlider(&outerLineGapSliderData, 0.05);
+                        renderSlider(&outerLineGapSliderData, 0.03);
                         const char *sliderPercent = TextFormat("%.0f", currentCrosshairConfig.outerLineGap);
                         CLAY_TEXT(CLAY_DYNSTR(sliderPercent), &largeTextConfig);
                     }
@@ -413,7 +413,7 @@ void renderSettingsMenu(void) {
                     },
                     .childGap = 16,
                 },
-                .backgroundColor = COLOR_LIGHT_GRAY,
+                .backgroundColor = COLOR_DARK_GRAY,
                 .custom = {
                     .customData = &settingsCrosshairData,
                 },
@@ -450,7 +450,7 @@ void renderSettingsMenu(void) {
                     CLAY_TEXT(CLAY_STRING("Sensitivity"), &largeTextConfig);
                 }
                 CLAY({ .layout = { .sizing = { .width = CLAY_SIZING_PERCENT(0.7), }, .childGap = 16, .childAlignment = {.y = CLAY_ALIGN_Y_CENTER, }, }, }) {
-                    renderSlider(&sensitivitySliderData, 0.05);
+                    renderSlider(&sensitivitySliderData, 0.03);
                     const char *sliderPercent = TextFormat("%.2f", sensitivity);
                     CLAY_TEXT(CLAY_DYNSTR(sliderPercent), &largeTextConfig);
                 }
@@ -508,7 +508,7 @@ void renderSettingsMenu(void) {
                     CLAY_TEXT(CLAY_STRING("Max saved scores"), &largeTextConfig);
                 }
                 CLAY({ .layout = { .sizing = { .width = CLAY_SIZING_PERCENT(0.7), }, .childGap = 16, .childAlignment = {.y = CLAY_ALIGN_Y_CENTER, }, }, }) {
-                    renderSlider(&maxSavedScoresSliderData, 0.05);
+                    renderSlider(&maxSavedScoresSliderData, 0.03);
                     const char *sliderPercent = TextFormat("%d", (int) maxSavedScores);
                     CLAY_TEXT(CLAY_DYNSTR(sliderPercent), &largeTextConfig);
                 }
@@ -519,6 +519,14 @@ void renderSettingsMenu(void) {
             .layout = {
                 .layoutDirection = CLAY_LEFT_TO_RIGHT,
                 .childGap = 16,
+            },
+            .floating = {
+                .attachTo = CLAY_ATTACH_TO_PARENT,
+                .attachPoints = {
+                    .element = CLAY_ATTACH_POINT_RIGHT_BOTTOM,
+                    .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM,
+                },
+                .offset = { -16, -16 },
             },
         }) {
             CLAY({

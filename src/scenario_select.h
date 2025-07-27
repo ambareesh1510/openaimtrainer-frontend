@@ -13,7 +13,7 @@ void handleSelectScenario(Clay_ElementId elementId, Clay_PointerData pointerInfo
 void handleSelectDifficulty(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData);
 
 
-extern cvector_vector_type(ScenarioMetadata) fileMetadata;
+extern cvector_vector_type(ScenarioMetadata) myFileMetadata;
 
 // TODO: convert to raylib textformat
 extern char *timeBuffer;

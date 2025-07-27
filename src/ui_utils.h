@@ -124,7 +124,10 @@ struct TextBoxData {
     const char placeholder[TEXT_BOX_MAX_LEN + 1];
     size_t placeholderLen;
     float blink;
+    // TODO: turn backspaceDelay and firstBackspace into globals
+    //  and only update them for the textbox that is focused
     float backspaceDelay;
+    bool firstBackspace;
     int id;
 };
 typedef struct TextBoxData TextBoxData;

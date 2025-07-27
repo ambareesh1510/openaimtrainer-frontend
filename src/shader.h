@@ -6,8 +6,6 @@
 extern Shader shader;
 extern Shader wallShader;
 
-extern Texture2D wallTexture;
-
 void initShaders();
 
 #endif /* SHADER_H */

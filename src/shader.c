@@ -6,7 +6,6 @@
 bool shadersInitialized = false;
 Shader shader = { 0 };
 Shader wallShader = { 0 };
-Texture2D wallTexture;
 
 void initShaders() {
     if (shadersInitialized) {
@@ -21,9 +20,6 @@ void initShaders() {
     // Ambient light level (some basic lighting)
     int ambientLoc = GetShaderLocation(shader, "ambient");
     SetShaderValue(shader, ambientLoc, (float[4]){ 0.1f, 0.1f, 0.1f, 1.0f }, SHADER_UNIFORM_VEC4);
-
-    wallTexture = LoadTexture("assets/wall_texture.png");
-    SetTextureWrap(wallTexture, TEXTURE_WRAP_REPEAT);
 
     wallShader = LoadShader("assets/wall_shader.vert", "assets/wall_shader.frag");
     wallShader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(wallShader, "viewPos");
