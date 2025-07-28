@@ -11,11 +11,25 @@ int selectedScenarioIndex = -1;
 int selectedDifficulty = -1;
 
 #define SEARCH_PLACEHOLDER "Search for scenarios..."
-TextBoxData scenarioSearchData = {
+TextBoxData myScenarioSearchData = {
     .placeholder = SEARCH_PLACEHOLDER,
     .placeholderLen = sizeof(SEARCH_PLACEHOLDER) - 1,
     .id = 1,
 };
+
+TextBoxData downloadedScenarioSearchData = {
+    .placeholder = SEARCH_PLACEHOLDER,
+    .placeholderLen = sizeof(SEARCH_PLACEHOLDER) - 1,
+    .id = 2,
+};
+
+TextBoxData onlineScenarioSearchData = {
+    .placeholder = SEARCH_PLACEHOLDER,
+    .placeholderLen = sizeof(SEARCH_PLACEHOLDER) - 1,
+    .id = 3,
+};
+
+TextBoxData *currentScenarioSearchData = &myScenarioSearchData;
 
 enum {
     MY_SCENARIOS,
@@ -65,15 +79,15 @@ bool findScenariosInProgress = false;
 int compareFuzzyScore(const void *a, const void *b) {
     ScenarioMetadata *metadataA = (ScenarioMetadata *) a;
     ScenarioMetadata *metadataB = (ScenarioMetadata *) b;
-    int32_t scoreA = fuzzy_match(scenarioSearchData.str, metadataA->name);
-    int32_t scoreB = fuzzy_match(scenarioSearchData.str, metadataB->name);
+    int32_t scoreA = fuzzy_match((*currentScenarioSearchData).str, metadataA->name);
+    int32_t scoreB = fuzzy_match((*currentScenarioSearchData).str, metadataB->name);
     return scoreA - scoreB;
 }
 
 void fuzzySortCurrentMetadataList(void) {
     if (currentScenarioTab == ONLINE_SCENARIOS) {
         cleanupFindScenariosInfo(&findScenariosInfo);
-        findScenariosInfo = createFindScenariosInfo(scenarioSearchData.str);
+        findScenariosInfo = createFindScenariosInfo((*currentScenarioSearchData).str);
         sendFindScenariosRequest(&findScenariosInfo);
         findScenariosInProgress = true;
         return;
@@ -93,7 +107,6 @@ void handleSelectScenario(Clay_ElementId elementId, Clay_PointerData pointerInfo
             if (selectedScenarioIndex == (int) userData) {
                 // TODO: make this async
                 downloadScenario(onlineFileUuids[selectedScenarioIndex].uuid);
-                // onlineFileUuids[selectedScenarioIndex].downloaded = true;
             }
         } 
         selectedScenarioIndex = (int) userData;
@@ -115,10 +128,13 @@ void handleSwitchToScenariosTab(Clay_ElementId elementId, Clay_PointerData point
         currentScenarioTab = userData;
         if (userData == MY_SCENARIOS) {
             currentFileMetadata = &myFileMetadata;
+            currentScenarioSearchData = &myScenarioSearchData;
         } else if (userData == DOWNLOADED_SCENARIOS) {
             currentFileMetadata = &downloadedFileMetadata;
+            currentScenarioSearchData = &downloadedScenarioSearchData;
         } else if (userData == ONLINE_SCENARIOS) {
             currentFileMetadata = &onlineFileMetadata;
+            currentScenarioSearchData = &onlineScenarioSearchData;
         }
         findScenarios();
     }
@@ -342,7 +358,7 @@ void findScenarios() {
     if (currentScenarioTab == ONLINE_SCENARIOS) {
         if (*currentFileMetadata == NULL && !findScenariosInfo.requestData.dispatched) {
             cleanupFindScenariosInfo(&findScenariosInfo);
-            findScenariosInfo = createFindScenariosInfo(scenarioSearchData.str);
+            findScenariosInfo = createFindScenariosInfo((*currentScenarioSearchData).str);
             findScenariosInProgress = true;
             sendFindScenariosRequest(&findScenariosInfo);
         }
@@ -636,7 +652,7 @@ CustomLayoutElementData scenarioSelectScoreGraphData = {
 };
 
 void renderScenarioSelectScreen(void) {
-    if (IsKeyPressed(KEY_ENTER) && scenarioSearchData.focused) {
+    if (IsKeyPressed(KEY_ENTER) && (*currentScenarioSearchData).focused) {
         // printf("Sorting metadata list\n");
         fuzzySortCurrentMetadataList();
     }
@@ -708,7 +724,7 @@ void renderScenarioSelectScreen(void) {
                 }
             }
             CDIV(CLAY_SIZING_PERCENT(1.0), CLAY_SIZING_FIXED(50)) {
-                renderTextBox(&scenarioSearchData);
+                renderTextBox(currentScenarioSearchData);
             }
             CLAY({
                 .clip = {
