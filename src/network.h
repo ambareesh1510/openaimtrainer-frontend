@@ -100,4 +100,10 @@ void cleanupFindScenariosInfo(FindScenariosInfo *info);
 
 int sendFindScenariosRequest(FindScenariosInfo *info);
 
+// =================
+// Download scenario
+// =================
+
+int downloadScenario(const char *uuid);
+
 #endif /* NETWORK_H */

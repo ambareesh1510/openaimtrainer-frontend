@@ -5,6 +5,7 @@
 
 #include "save_scores.h"
 #include "network.h"
+#include "config.h"
 
 int selectedScenarioIndex = -1;
 int selectedDifficulty = -1;
@@ -25,7 +26,15 @@ enum {
 cvector_vector_type(ScenarioMetadata) myFileMetadata = NULL;
 cvector_vector_type(ScenarioMetadata) downloadedFileMetadata = NULL;
 cvector_vector_type(ScenarioMetadata) onlineFileMetadata = NULL;
-cvector_vector_type(char *) onlineFileUuids = NULL;
+
+struct OnlineScenarioExtraMetadata {
+    char *uuid;
+    bool downloaded;
+    bool downloading;
+};
+typedef struct OnlineScenarioExtraMetadata OnlineScenarioExtraMetadata;
+
+cvector_vector_type(OnlineScenarioExtraMetadata) onlineFileUuids = NULL;
 
 cvector_vector_type(ScenarioMetadata) *currentFileMetadata = &myFileMetadata;
 
@@ -59,9 +68,18 @@ void fuzzySortCurrentMetadataList(void) {
 
 void handleSelectScenario(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        if (currentScenarioTab == ONLINE_SCENARIOS) {
+            if (selectedScenarioIndex == (int) userData) {
+                // TODO: make this async
+                downloadScenario(onlineFileUuids[selectedScenarioIndex].uuid);
+                onlineFileUuids[selectedScenarioIndex].downloaded = true;
+            }
+        } 
         selectedScenarioIndex = (int) userData;
-        selectedDifficulty = 0;
-        loadSavedScores((*currentFileMetadata)[selectedScenarioIndex]);
+        if (currentScenarioTab != ONLINE_SCENARIOS) {
+            selectedDifficulty = 0;
+            loadSavedScores((*currentFileMetadata)[selectedScenarioIndex]);
+        }
     }
 }
 
@@ -89,19 +107,23 @@ void handleSwitchToScenariosTab(Clay_ElementId elementId, Clay_PointerData point
 char *timeBuffer = NULL;
 
 void RenderScenarioCard(int index) {
+    Clay_Color cardBackgroundColor;
     CLAY({
         .layout = {
             .sizing = {
                 .width = CLAY_SIZING_GROW(0),
             },
-            .padding = { 5, 5, 5, 5 },
+            .padding = { 8, 8, 8, 8 },
             .childGap = 16,
         },
+        .cornerRadius = CLAY_CORNER_RADIUS(2),
         .backgroundColor = (index == selectedScenarioIndex)
             ? COLOR_DARK_GREEN
             : (Clay_Hovered()
                 ? COLOR_DARK_BLUE
-                : COLOR_LIGHT_GRAY),
+                : (currentScenarioTab == ONLINE_SCENARIOS && onlineFileUuids[index].downloaded
+                    ? COLOR_DARK_GRAY
+                    : COLOR_LIGHT_GRAY)),
     }) {
         Clay_ElementId nameId = CLAY_IDI("ScenarioCard_Name", index);
         Clay_ElementId authorId = CLAY_IDI("ScenarioCard_Author", index);
@@ -285,7 +307,7 @@ void freeMetadata() {
             free((*currentFileMetadata)[i].difficultyData);
         }
         if (currentScenarioTab == ONLINE_SCENARIOS) {
-            free(onlineFileUuids[i]);
+            free(onlineFileUuids[i].uuid);
         }
     }
     cvector_clear(onlineFileUuids);
@@ -311,9 +333,9 @@ void findScenarios() {
     // TODO: don't hardcode
     FilePathList dir;
     if (currentScenarioTab == MY_SCENARIOS) {
-        dir = LoadDirectoryFiles("../../scenarios");
+        dir = LoadDirectoryFiles(MY_SCENARIOS_PATH);
     } else if (currentScenarioTab == DOWNLOADED_SCENARIOS) {
-        dir = LoadDirectoryFiles("../../downloaded");
+        dir = LoadDirectoryFiles(DOWNLOADED_SCENARIOS_PATH);
     }
 
     // TODO: lazy loading
@@ -552,7 +574,6 @@ int parseFindScenariosResponse() {
         cJSON *time = cJSON_GetObjectItem(item, "time");
         cJSON *uuid = cJSON_GetObjectItem(item, "uuid");
 
-        // Basic validation
         if (
             !cJSON_IsString(name)
             || !cJSON_IsString(author)
@@ -568,7 +589,14 @@ int parseFindScenariosResponse() {
         newMetadata.time = time->valuedouble;
         cvector_push_back(onlineFileMetadata, newMetadata);
 
-        cvector_push_back(onlineFileUuids, strdup(uuid->valuestring));
+        OnlineScenarioExtraMetadata extraMetadata = {
+            .uuid = strdup(uuid->valuestring),
+            .downloading = false,
+        };
+        extraMetadata.downloaded = DirectoryExists(
+            TextFormat(DOWNLOADED_SCENARIOS_PATH "/%s", extraMetadata.uuid)
+        );
+        cvector_push_back(onlineFileUuids, extraMetadata);
     }
 
     cJSON_Delete(root);
@@ -691,12 +719,23 @@ void renderScenarioSelectScreen(void) {
                     shouldRender = true;
                 }
                 if (shouldRender) {
-                    for (
-                        size_t i = 0;
-                        i < cvector_size(*currentFileMetadata);
-                        i++
-                    ) {
-                        RenderScenarioCard(i);
+                    CLAY({
+                        .layout = {
+                            .sizing = {
+                                .width = CLAY_SIZING_GROW(0),
+                                .height = CLAY_SIZING_GROW(0),
+                            },
+                            .childGap = 8,
+                            .layoutDirection = CLAY_TOP_TO_BOTTOM,
+                        },
+                    }) {
+                        for (
+                            size_t i = 0;
+                            i < cvector_size(*currentFileMetadata);
+                            i++
+                        ) {
+                            RenderScenarioCard(i);
+                        }
                     }
                 } else {
                     CLAY({
@@ -770,6 +809,21 @@ void renderScenarioSelectScreen(void) {
                     },
                 }) {
                     CLAY_TEXT(CLAY_STRING("No scenario selected"), CLAY_TEXT_CONFIG(largeTextConfig));
+                }
+            } else if (currentScenarioTab == ONLINE_SCENARIOS) {
+                CLAY({
+                    .layout = {
+                        .sizing = {
+                            .width = CLAY_SIZING_GROW(0),
+                            .height = CLAY_SIZING_GROW(0),
+                        },
+                        .childAlignment = {
+                            .x = CLAY_ALIGN_X_CENTER,
+                            .y = CLAY_ALIGN_Y_CENTER,
+                        },
+                    },
+                }) {
+                    CLAY_TEXT(CLAY_STRING("Click again to download"), CLAY_TEXT_CONFIG(largeTextConfig));
                 }
             } else {
                 ScenarioMetadata s = (*currentFileMetadata)[selectedScenarioIndex];

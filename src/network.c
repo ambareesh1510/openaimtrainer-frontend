@@ -6,9 +6,9 @@
 
 #include "tinycthread/tinycthread.h"
 #include "cjson/cJSON.h"
+#include "raylib/raylib.h"
 
-#define SERVER_BASE_URL "http://localhost"
-#define API_URL SERVER_BASE_URL "/api"
+#include "config.h"
 
 bool curlInitialized = false;
 
@@ -348,5 +348,61 @@ int sendFindScenariosRequest(FindScenariosInfo *info) {
     }
     thrd_detach(threadId);
     info->requestData.dispatched = true;
+    return 0;
+}
+
+// =================
+// Download scenario
+// =================
+
+size_t writeFileCallback(void *ptr, size_t size, size_t nmemb, void *userdata) {
+    FILE *fp = (FILE *)userdata;
+    return fwrite(ptr, size, nmemb, fp);
+}
+
+int downloadFile(const char *url, const char *destPath) {
+    CURL *curl = curl_easy_init();
+    if (!curl) return -1;
+
+    FILE *fp = fopen(destPath, "wb");
+    if (!fp) {
+        curl_easy_cleanup(curl);
+        return -1;
+    }
+
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeFileCallback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
+
+    CURLcode res = curl_easy_perform(curl);
+    fclose(fp);
+    curl_easy_cleanup(curl);
+
+    return (res == CURLE_OK) ? 0 : -1;
+}
+
+int downloadScenario(const char *uuid) {
+    const char *dirPath = TextFormat("%s/%s", DOWNLOADED_SCENARIOS_PATH, uuid);
+    int res = MakeDirectory(dirPath);
+    if (res != 0) {
+        return -1;
+    }
+
+    const char *urlInfo = TextFormat("%s/scenarios/%s/info.toml", SERVER_BASE_URL, uuid);
+    const char *urlScript = TextFormat("%s/scenarios/%s/script.lua", SERVER_BASE_URL, uuid);
+
+    const char *destInfo = TextFormat("%s/info.toml", dirPath);
+    const char *destScript = TextFormat("%s/script.lua", dirPath);
+
+    if (downloadFile(urlInfo, destInfo) != 0) {
+        fprintf(stderr, "Failed to download %s\n", urlInfo);
+        return -1;
+    }
+
+    if (downloadFile(urlScript, destScript) != 0) {
+        fprintf(stderr, "Failed to download %s\n", urlScript);
+        return -1;
+    }
+
     return 0;
 }
