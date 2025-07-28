@@ -1,6 +1,7 @@
 #include "lua_interface.h"
 #include "clay_renderer_raylib.h"
 #include "save_scores.h"
+#include "audio.h"
 
 Slotmap targetMap = { 0 };
 
@@ -503,6 +504,9 @@ void loadLuaScenario(ScenarioMetadata metadata, int selectedDifficulty, char *se
                 ? IsMouseButtonDown(MOUSE_BUTTON_LEFT)
                 : IsMouseButtonPressed(MOUSE_BUTTON_LEFT));
             if (canShoot) {
+                PlaySound(soundArray[currentSound]);
+                currentSound = (currentSound + 1) % MAX_SOUNDS;
+
                 shotCooldown = config.shotDelay;
                 if (callLuaFunction(L, "onShoot") != 0) {
                     goto cleanup;

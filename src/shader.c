@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include "raylib/rlgl.h"
+#include "config.h"
 
 bool shadersInitialized = false;
 Shader shader = { 0 };
@@ -21,7 +22,10 @@ void initShaders() {
     int ambientLoc = GetShaderLocation(shader, "ambient");
     SetShaderValue(shader, ambientLoc, (float[4]){ 0.1f, 0.1f, 0.1f, 1.0f }, SHADER_UNIFORM_VEC4);
 
-    wallShader = LoadShader("assets/wall_shader.vert", "assets/wall_shader.frag");
+    wallShader = LoadShader(
+        ASSETS_DIR "/wall_shader.vert",
+        ASSETS_DIR "/wall_shader.frag"
+    );
     wallShader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(wallShader, "viewPos");
     wallShader.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocation(wallShader, "matModel");
 
