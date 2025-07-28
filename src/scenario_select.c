@@ -30,11 +30,32 @@ cvector_vector_type(ScenarioMetadata) onlineFileMetadata = NULL;
 struct OnlineScenarioExtraMetadata {
     char *uuid;
     bool downloaded;
-    bool downloading;
+    enum {
+        SCENARIO_NOT_DOWNLOADED,
+        SCENARIO_DOWNLOADING,
+        SCENARIO_DOWNLOADED,
+    } downloading;
 };
 typedef struct OnlineScenarioExtraMetadata OnlineScenarioExtraMetadata;
 
+mtx_t onlineFileExtraMetadataMutex;
 cvector_vector_type(OnlineScenarioExtraMetadata) onlineFileUuids = NULL;
+
+void initOnlineFileExtraMetadataMutex() {
+    mtx_init(&onlineFileExtraMetadataMutex, mtx_plain);
+}
+
+void updateDownloadedInfo() {
+    mtx_lock(&onlineFileExtraMetadataMutex);
+    for (size_t i = 0; i < cvector_size(onlineFileUuids); i++) {
+        if (DirectoryExists(
+            TextFormat(DOWNLOADED_SCENARIOS_PATH "/%s", onlineFileUuids[i].uuid)
+        )) {
+            onlineFileUuids[i].downloaded = SCENARIO_DOWNLOADED;
+        }
+    }
+    mtx_unlock(&onlineFileExtraMetadataMutex);
+}
 
 cvector_vector_type(ScenarioMetadata) *currentFileMetadata = &myFileMetadata;
 
@@ -72,7 +93,7 @@ void handleSelectScenario(Clay_ElementId elementId, Clay_PointerData pointerInfo
             if (selectedScenarioIndex == (int) userData) {
                 // TODO: make this async
                 downloadScenario(onlineFileUuids[selectedScenarioIndex].uuid);
-                onlineFileUuids[selectedScenarioIndex].downloaded = true;
+                // onlineFileUuids[selectedScenarioIndex].downloaded = true;
             }
         } 
         selectedScenarioIndex = (int) userData;
@@ -561,6 +582,7 @@ int parseFindScenariosResponse() {
         return -1;
     }
 
+    mtx_lock(&onlineFileExtraMetadataMutex);
     freeMetadata();
 
     int count = cJSON_GetArraySize(root);
@@ -593,13 +615,18 @@ int parseFindScenariosResponse() {
             .uuid = strdup(uuid->valuestring),
             .downloading = false,
         };
-        extraMetadata.downloaded = DirectoryExists(
+        if (DirectoryExists(
             TextFormat(DOWNLOADED_SCENARIOS_PATH "/%s", extraMetadata.uuid)
-        );
+        )) {
+            extraMetadata.downloaded = SCENARIO_DOWNLOADED;
+        }
         cvector_push_back(onlineFileUuids, extraMetadata);
     }
+    mtx_unlock(&onlineFileExtraMetadataMutex);
 
     cJSON_Delete(root);
+
+    updateDownloadedInfo();
     return 0;
 }
 
@@ -729,6 +756,7 @@ void renderScenarioSelectScreen(void) {
                             .layoutDirection = CLAY_TOP_TO_BOTTOM,
                         },
                     }) {
+                        mtx_lock(&onlineFileExtraMetadataMutex);
                         for (
                             size_t i = 0;
                             i < cvector_size(*currentFileMetadata);
@@ -736,6 +764,7 @@ void renderScenarioSelectScreen(void) {
                         ) {
                             RenderScenarioCard(i);
                         }
+                        mtx_unlock(&onlineFileExtraMetadataMutex);
                     }
                 } else {
                     CLAY({

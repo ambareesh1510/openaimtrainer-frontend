@@ -388,7 +388,7 @@ void handleToScenarioSelect(Clay_ElementId elementId, Clay_PointerData pointerIn
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         uiState = SCENARIO_SELECT;
         if (selectedScenarioIndex >= 0) {
-            loadSavedScores(myFileMetadata[selectedScenarioIndex]);
+            loadSavedScores((*currentFileMetadata)[selectedScenarioIndex]);
         }
     }
 }

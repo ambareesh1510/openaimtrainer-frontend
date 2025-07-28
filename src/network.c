@@ -9,6 +9,7 @@
 #include "raylib/raylib.h"
 
 #include "config.h"
+#include "scenario_select.h"
 
 bool curlInitialized = false;
 
@@ -381,7 +382,8 @@ int downloadFile(const char *url, const char *destPath) {
     return (res == CURLE_OK) ? 0 : -1;
 }
 
-int downloadScenario(const char *uuid) {
+int downloadScenarioThread(void *arg) {
+    const char *uuid = (char *) arg;
     const char *dirPath = TextFormat("%s/%s", DOWNLOADED_SCENARIOS_PATH, uuid);
     int res = MakeDirectory(dirPath);
     if (res != 0) {
@@ -404,5 +406,24 @@ int downloadScenario(const char *uuid) {
         return -1;
     }
 
+    updateDownloadedInfo();
+
+    return 0;
+}
+
+int downloadScenario(const char *uuid) {
+    printf("Got download req\n");
+    if (DirectoryExists(
+        TextFormat(DOWNLOADED_SCENARIOS_PATH "/%s", uuid)
+    )) {
+        return 0;
+    }
+    printf("Staring down req\n");
+    thrd_t threadId;
+    int res = thrd_create(&threadId, downloadScenarioThread, (void *) uuid);
+    if (res != thrd_success) {
+        return -1;
+    }
+    thrd_detach(threadId);
     return 0;
 }

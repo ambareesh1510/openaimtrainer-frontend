@@ -89,7 +89,7 @@ void UpdateDrawFrame(Font* fonts)
                     if (IsKeyPressed(KEY_ESCAPE)) {
                         uiState = SCENARIO_SELECT;
                         if (selectedScenarioIndex >= 0) {
-                            loadSavedScores(myFileMetadata[selectedScenarioIndex]);
+                            loadSavedScores((*currentFileMetadata)[selectedScenarioIndex]);
                         }
                     }
                 }
