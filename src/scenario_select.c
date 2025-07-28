@@ -126,6 +126,7 @@ void handleSelectDifficulty(Clay_ElementId elementId, Clay_PointerData pointerIn
 void handleSwitchToScenariosTab(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         currentScenarioTab = userData;
+        selectedScenarioIndex = -1;
         if (userData == MY_SCENARIOS) {
             currentFileMetadata = &myFileMetadata;
             currentScenarioSearchData = &myScenarioSearchData;
@@ -136,7 +137,9 @@ void handleSwitchToScenariosTab(Clay_ElementId elementId, Clay_PointerData point
             currentFileMetadata = &onlineFileMetadata;
             currentScenarioSearchData = &onlineScenarioSearchData;
         }
-        findScenarios();
+        if (*currentFileMetadata == NULL) {
+            findScenarios();
+        }
     }
 }
 
@@ -331,31 +334,32 @@ bail:
     return version;
 }
 
-void freeMetadata() {
-    for (size_t i = 0; i < cvector_size(*currentFileMetadata); i++) {
-        free((*currentFileMetadata)[i].name);
-        free((*currentFileMetadata)[i].author);
-        free((*currentFileMetadata)[i].description);
+void freeMetadata(cvector_vector_type(ScenarioMetadata) fileMetadata) {
+    for (size_t i = 0; i < cvector_size(fileMetadata); i++) {
+        free(fileMetadata[i].name);
+        free(fileMetadata[i].author);
+        free(fileMetadata[i].description);
         if (currentScenarioTab != ONLINE_SCENARIOS) {
-            free((*currentFileMetadata)[i].path);
-            for (size_t j = 0; j < (*currentFileMetadata)[i].numDifficulties; j++) {
-                free((*currentFileMetadata)[i].difficultyData[j].difficultyName);
+            free(fileMetadata[i].path);
+            for (size_t j = 0; j < (fileMetadata)[i].numDifficulties; j++) {
+                free(fileMetadata[i].difficultyData[j].difficultyName);
             }
-            free((*currentFileMetadata)[i].difficultyData);
+            free(fileMetadata[i].difficultyData);
         }
-        if (currentScenarioTab == ONLINE_SCENARIOS) {
+        if (fileMetadata == onlineFileMetadata) {
             free(onlineFileUuids[i].uuid);
         }
     }
-    cvector_clear(onlineFileUuids);
-    cvector_clear(*currentFileMetadata);
+    if (fileMetadata == onlineFileMetadata) {
+        cvector_clear(onlineFileUuids);
+    }
+    cvector_clear(fileMetadata);
 }
 
 
 void findScenarios() {
-    selectedScenarioIndex = -1;
-
     if (currentScenarioTab == ONLINE_SCENARIOS) {
+        // TODO: this check is redundant
         if (*currentFileMetadata == NULL && !findScenariosInfo.requestData.dispatched) {
             cleanupFindScenariosInfo(&findScenariosInfo);
             findScenariosInfo = createFindScenariosInfo((*currentScenarioSearchData).str);
@@ -365,15 +369,19 @@ void findScenarios() {
         return;
     }
     
-    freeMetadata();
+    freeMetadata(*currentFileMetadata);
 
-    // TODO: don't hardcode
-    FilePathList dir;
+    const char *searchDir; 
     if (currentScenarioTab == MY_SCENARIOS) {
-        dir = LoadDirectoryFiles(MY_SCENARIOS_PATH);
-    } else if (currentScenarioTab == DOWNLOADED_SCENARIOS) {
-        dir = LoadDirectoryFiles(DOWNLOADED_SCENARIOS_PATH);
+        searchDir = MY_SCENARIOS_PATH;
+    } else {
+        searchDir = DOWNLOADED_SCENARIOS_PATH;
     }
+    if (!DirectoryExists(searchDir)) {
+        cvector_reserve(*currentFileMetadata, 1);
+        return;
+    }
+    FilePathList dir = LoadDirectoryFiles(searchDir);
 
     // TODO: lazy loading
     for (size_t i = 0; i < dir.count; i++) {
@@ -599,7 +607,7 @@ int parseFindScenariosResponse() {
     }
 
     mtx_lock(&onlineFileExtraMetadataMutex);
-    freeMetadata();
+    freeMetadata(onlineFileMetadata);
 
     int count = cJSON_GetArraySize(root);
 
