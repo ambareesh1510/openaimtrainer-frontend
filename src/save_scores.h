@@ -31,6 +31,13 @@ extern cvector_vector_type(ScoreSample) scoreSamples;
 
 void loadSavedScores(ScenarioMetadata metadata);
 
-void drawGraph(RenderTexture2D texture, CustomLayoutElementType type, Color clearColor, Font font);
+void drawGraph(
+    int bboxX,
+    int bboxY,
+    int bboxW,
+    int bboxH,
+    CustomLayoutElementType type,
+    Color clearColor
+);
 
 #endif /* SAVE_SCORES_H */

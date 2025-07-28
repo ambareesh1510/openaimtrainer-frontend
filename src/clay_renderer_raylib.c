@@ -6,12 +6,6 @@
 RenderTexture2D settingsCrosshairTexture = { 0 };
 bool settingsCrosshairTextureInitialized = false;
 
-RenderTexture2D progressionGraphTexture = { 0 };
-bool progressionGraphTextureInitialized = false;
-
-RenderTexture2D scenarioGraphTexture = { 0 };
-bool scenarioGraphTextureInitialized = false;
-
 cvector_vector_type(Clay_ScissorData) scissorDataStack = NULL;
 
 Clay_ScissorData clipScissorData(Clay_ScissorData outer, Clay_ScissorData inner) {
@@ -248,68 +242,14 @@ void Clay_Raylib_Render(Clay_RenderCommandArray renderCommands, Font* fonts)
                     customData->type == DRAW_PROGRESSION_GRAPH
                     || customData->type == DRAW_SCENARIO_GRAPH
                 ) {
-                    if (
-                        customData->type == DRAW_PROGRESSION_GRAPH
-                        && (!progressionGraphTextureInitialized || savedScoresModified)
-                    ) {
-                        UnloadRenderTexture(progressionGraphTexture);
-                        progressionGraphTexture = LoadRenderTexture(
-                            boundingBox.width,
-                            boundingBox.height
-                        );
-                        progressionGraphTextureInitialized = true;
-                    }
-                    if (customData->type == DRAW_SCENARIO_GRAPH && scenarioScoresModified) {
-                        UnloadRenderTexture(scenarioGraphTexture);
-                        scenarioGraphTexture = LoadRenderTexture(
-                            boundingBox.width,
-                            boundingBox.height
-                        );
-                        scenarioGraphTextureInitialized = true;
-                    }
-                    if (customData->type == DRAW_PROGRESSION_GRAPH && savedScoresModified) {
                         drawGraph(
-                            progressionGraphTexture,
+                            boundingBox.x,
+                            boundingBox.y,
+                            boundingBox.width,
+                            boundingBox.height,
                             customData->type,
-                            CLAY_COLOR_TO_RAYLIB_COLOR(config->backgroundColor),
-                            fonts[FONT_ID_GRAPH]
+                            CLAY_COLOR_TO_RAYLIB_COLOR(config->backgroundColor)
                         );
-                        savedScoresModified = false;
-                    }
-                    if (customData->type == DRAW_SCENARIO_GRAPH && scenarioScoresModified) {
-                        drawGraph(
-                            scenarioGraphTexture,
-                            customData->type,
-                            CLAY_COLOR_TO_RAYLIB_COLOR(config->backgroundColor),
-                            fonts[0]
-                        );
-                        scenarioScoresModified = false;
-                    }
-                    if (customData->type == DRAW_PROGRESSION_GRAPH) {
-                        DrawTextureRec(
-                            progressionGraphTexture.texture,
-                            (Rectangle) {
-                                0, 0, boundingBox.width, -boundingBox.height
-                            },
-                            (Vector2) {
-                                boundingBox.x,
-                                boundingBox.y,
-                            },
-                            WHITE
-                        );
-                    } else if (customData->type == DRAW_SCENARIO_GRAPH) {
-                        DrawTextureRec(
-                            scenarioGraphTexture.texture,
-                            (Rectangle) {
-                                0, 0, boundingBox.width, -boundingBox.height
-                            },
-                            (Vector2) {
-                                boundingBox.x,
-                                boundingBox.y,
-                            },
-                            WHITE
-                        );
-                    }
                 }
                 break;
             }

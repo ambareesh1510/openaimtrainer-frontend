@@ -114,41 +114,42 @@ bail_loop:
 }
 
 void drawGraph(
-    RenderTexture2D texture,
+    int bboxX,
+    int bboxY,
+    int bboxW,
+    int bboxH,
     CustomLayoutElementType type,
-    Color clearColor,
-    Font font
+    Color clearColor
 ) {
-    int w = texture.texture.width;
-    int h = texture.texture.height;
-    int cw = texture.texture.width / 2;
-    int ch = texture.texture.height / 2;
+    int w = bboxW;
+    int h = bboxH;
+    int cw = bboxW / 2;
+    int ch = bboxH / 2;
 
     float fontSize = 15.0;
     float spacing = 1.0;
 
-    initShaders();
-    BeginTextureMode(texture);
-
-    DrawRectangle(0, 0, w, h, clearColor);
+    DrawRectangle(bboxX, bboxY, bboxW, bboxH, clearColor);
 
     if (scoreFiles == NULL || cvector_size(scoreFiles) == 0) {
+        Font largeFont = fonts[FONT_ID_GRAPH];
         const char *text = "No data";
-        // const char *text = "Score";
-        Vector2 textSize = MeasureTextEx(font, text, fontSize * 3, spacing);
+        Vector2 textSize = MeasureTextEx(largeFont, text, 45.0, spacing);
         DrawTextEx(
-            font,
+            largeFont,
             text,
             (Vector2) {
-                cw - textSize.x / 2,
-                ch - textSize.y / 2,
+                bboxX + cw - textSize.x / 2,
+                bboxY + ch - textSize.y / 2,
             },
-            fontSize * 3,
+            45.0,
             spacing,
             WHITE
         );
         goto bail;
     }
+
+    Font font = fonts[FONT_ID_BODY_16];
 
     int marginX = 65;
     int marginY = 55;
@@ -162,9 +163,9 @@ void drawGraph(
     int numSubdivisions = 5;
 
 
-    DrawRectangle(marginX - 15, 10, 2, h - marginY, auxColor);
+    DrawRectangle(bboxX + marginX - 15, bboxY + 10, 2, h - marginY, auxColor);
 
-    DrawRectangle(w - (marginX - 15), 10, 2, h - marginY, auxColor);
+    DrawRectangle(bboxX + w - (marginX - 15), bboxY + 10, 2, h - marginY, auxColor);
 
     Vector2 scoreLegendSize = MeasureTextEx(font, "Score", fontSize, spacing);
     Vector2 accuracyLegendSize = MeasureTextEx(font, "Accuracy", fontSize, spacing);
@@ -176,8 +177,8 @@ void drawGraph(
         font,
         "Score",
         (Vector2) {
-            5,
-            labelMid + scoreLegendSize.x  / 2,
+            bboxX + 5,
+            bboxY + labelMid + scoreLegendSize.x  / 2,
         },
         (Vector2) { 0, 0 },
         -90,
@@ -190,8 +191,8 @@ void drawGraph(
         font,
         "Accuracy",
         (Vector2) {
-            w - 5 - accuracyLegendSize.y,
-            labelMid + accuracyLegendSize.x  / 2,
+            bboxX + w - 5 - accuracyLegendSize.y,
+            bboxY + labelMid + accuracyLegendSize.x  / 2,
         },
         (Vector2) { 0, 0 },
         -90,
@@ -215,15 +216,15 @@ void drawGraph(
 
     int legendYOffset = 20;
 
-    DrawRectangle(scoreOffset, h - legendYOffset, legendLineLength, 1, scoreColor);
-    DrawCircle(scoreOffset + legendLineLength / 2, h - legendYOffset, 3, scoreColor);
+    DrawRectangle(bboxX + scoreOffset, bboxY + h - legendYOffset, legendLineLength, 1, scoreColor);
+    DrawCircle(bboxX + scoreOffset + legendLineLength / 2, bboxY + h - legendYOffset, 3, scoreColor);
 
     DrawTextEx(
         font,
         "Score",
         (Vector2) {
-            scoreOffset + legendLineLength + smallGap,
-            h - legendYOffset - scoreLegendSize.y / 2
+            bboxX + scoreOffset + legendLineLength + smallGap,
+            bboxY + h - legendYOffset - scoreLegendSize.y / 2
         },
         fontSize,
         spacing,
@@ -232,20 +233,20 @@ void drawGraph(
 
 
     DrawRectangle(
-        accuracyOffset,
-        h - legendYOffset,
+        bboxX + accuracyOffset,
+        bboxY + h - legendYOffset,
         legendLineLength,
         1,
         accuracyColor
     );
-    DrawCircle(accuracyOffset + legendLineLength / 2, h - legendYOffset, 3, accuracyColor);
+    DrawCircle(bboxX + accuracyOffset + legendLineLength / 2, bboxY + h - legendYOffset, 3, accuracyColor);
 
     DrawTextEx(
         font,
         "Accuracy",
         (Vector2) {
-            accuracyOffset + legendLineLength + smallGap,
-            h - legendYOffset - accuracyLegendSize.y / 2
+            bboxX + accuracyOffset + legendLineLength + smallGap,
+            bboxY + h - legendYOffset - accuracyLegendSize.y / 2
         },
         fontSize,
         spacing,
@@ -285,8 +286,8 @@ void drawGraph(
                 font,
                 textLeft,
                 (Vector2) {
-                    marginX - 15 - textSize.x - 5,
-                    topMarginY
+                    bboxX + marginX - 15 - textSize.x - 5,
+                    bboxY + topMarginY
                         - textSize.y / 2
                         + (int) ((h - marginY - topMarginY) * (float) (numSubdivisions - i) / numSubdivisions)
                 },
@@ -299,8 +300,8 @@ void drawGraph(
             font,
             textRight,
             (Vector2) {
-                w - (marginX - 20),
-                topMarginY
+                bboxX + w - (marginX - 20),
+                bboxY + topMarginY
                     - textSize.y / 2
                     + (int) ((h - marginY - topMarginY) * (float) (numSubdivisions - i) / numSubdivisions)
             },
@@ -309,8 +310,8 @@ void drawGraph(
             WHITE
         );
         DrawRectangle(
-            marginX - 15,
-            topMarginY
+            bboxX + marginX - 15,
+            bboxY + topMarginY
                 + (int) ((h - marginY - topMarginY) * (float) (numSubdivisions - i) / numSubdivisions),
             w - 2 * (marginX - 15),
             1,
@@ -330,8 +331,8 @@ void drawGraph(
                 font,
                 text,
                 (Vector2) {
-                    marginX + (int) ((float) (w - 2 * marginX) * i) - textSize.x / 2,
-                    h - marginY + 10,
+                    bboxX + marginX + (int) ((float) (w - 2 * marginX) * i) - textSize.x / 2,
+                    bboxY + h - marginY + 10,
                 },
                 fontSize,
                 spacing,
@@ -349,8 +350,8 @@ void drawGraph(
                 font,
                 text,
                 (Vector2) {
-                    marginX + (int) ((float) (w - 2 * marginX) * i / numSubdivisions) - textSize.x / 2,
-                    h - marginY + 10,
+                    bboxX + marginX + (int) ((float) (w - 2 * marginX) * i / numSubdivisions) - textSize.x / 2,
+                    bboxY + h - marginY + 10,
                 },
                 fontSize,
                 spacing,
@@ -364,8 +365,8 @@ void drawGraph(
     if (bound == 1) {
         int pointY = topMarginY
             + (int) ((h - marginY - topMarginY) * (numSubdivisions - (numSubdivisions + 1) / 2) / numSubdivisions);
-        DrawCircle(cw, pointY, 3, accuracyColor);
-        DrawCircle(cw, pointY, 3, scoreColor);
+        DrawCircle(bboxX + cw, bboxY + pointY, 3, accuracyColor);
+        DrawCircle(bboxX + cw, bboxY + pointY, 3, scoreColor);
     }
 
     for (size_t i = 0; i < bound; i++) {
@@ -392,20 +393,20 @@ void drawGraph(
             * currAccuracy / 100.0f
         ));
 
-        DrawCircle(pointX, accuracyY, 3, accuracyColor);
-        DrawCircle(pointX, scoreY, 3, scoreColor);
+        DrawCircle(bboxX + pointX, bboxY + accuracyY, 3, accuracyColor);
+        DrawCircle(bboxX + pointX, bboxY + scoreY, 3, scoreColor);
 
         if (i != 0) {
             DrawLineEx(
-                (Vector2) { prevX, prevAccuracyY },
-                (Vector2) { pointX, accuracyY},
+                (Vector2) { bboxX + prevX, bboxY + prevAccuracyY },
+                (Vector2) { bboxX + pointX, bboxY + accuracyY},
                 1.0f,
                 accuracyColor
             );
 
             DrawLineEx(
-                (Vector2) { prevX, prevScoreY },
-                (Vector2) { pointX, scoreY},
+                (Vector2) { bboxX + prevX, bboxY + prevScoreY },
+                (Vector2) { bboxX + pointX, bboxY + scoreY},
                 1.0f,
                 scoreColor
             );
@@ -417,5 +418,4 @@ void drawGraph(
     }
 
 bail:
-    EndTextureMode();
 }
