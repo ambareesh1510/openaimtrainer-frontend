@@ -129,6 +129,7 @@ void renderLoginScreen(void) {
                     .x = CLAY_ALIGN_X_CENTER,
                 },
             },
+            .cornerRadius = CLAY_CORNER_RADIUS(2),
         }) {
             if (allowAuthRequest) {
                 Clay_OnHover(handleSubmitAuthRequest, 0);

@@ -143,11 +143,38 @@ void handleSwitchToScenariosTab(Clay_ElementId elementId, Clay_PointerData point
     }
 }
 
-
 char *timeBuffer = NULL;
+
+#define COLOR_DOWNLOADED_BG (Clay_Color) { 42, 42, 42, 255 }
+#define COLOR_DOWNLOADED_FG (Clay_Color) { 160, 160, 160, 255 }
+
+Clay_TextElementConfig downloadedLargeTextConfig = {
+    .fontId = FONT_ID_LARGE_BOLD,
+    .letterSpacing = 1,
+    .fontSize = 24,
+    .textColor = COLOR_DOWNLOADED_FG,
+};
+
+Clay_TextElementConfig downloadedNormalTextConfig = {
+    .fontId = FONT_ID_BODY_16,
+    .letterSpacing = 1,
+    .fontSize = 16,
+    .textColor = COLOR_DOWNLOADED_FG,
+};
 
 void RenderScenarioCard(int index) {
     Clay_Color cardBackgroundColor;
+    bool scenarioDownloaded =
+        currentScenarioTab == ONLINE_SCENARIOS
+        && onlineFileUuids[index].downloaded;
+    Clay_TextElementConfig *thisLargeTextConfig =
+        scenarioDownloaded
+            ? &downloadedLargeTextConfig
+            : &largeTextConfig;
+    Clay_TextElementConfig *thisNormalTextConfig =
+        scenarioDownloaded
+            ? &downloadedNormalTextConfig
+            : &normalTextConfig;
     CLAY({
         .layout = {
             .sizing = {
@@ -161,8 +188,8 @@ void RenderScenarioCard(int index) {
             ? COLOR_DARK_GREEN
             : (Clay_Hovered()
                 ? COLOR_DARK_BLUE
-                : (currentScenarioTab == ONLINE_SCENARIOS && onlineFileUuids[index].downloaded
-                    ? COLOR_DARK_GRAY
+                : (scenarioDownloaded
+                    ? COLOR_DOWNLOADED_BG
                     : COLOR_LIGHT_GRAY)),
     }) {
         Clay_ElementId nameId = CLAY_IDI("ScenarioCard_Name", index);
@@ -200,7 +227,7 @@ void RenderScenarioCard(int index) {
             } else {
                 metadata->titleOffset = 0.0;
             }
-            CLAY_TEXT(CLAY_DYNSTR(metadata->name), CLAY_TEXT_CONFIG(largeTextConfig));
+            CLAY_TEXT(CLAY_DYNSTR(metadata->name), thisLargeTextConfig);
         }
 
         CLAY({
@@ -231,7 +258,7 @@ void RenderScenarioCard(int index) {
             } else {
                 metadata->authorOffset = 0.0;
             }
-            CLAY_TEXT(CLAY_DYNSTR(metadata->author), CLAY_TEXT_CONFIG(normalTextConfig));
+            CLAY_TEXT(CLAY_DYNSTR(metadata->author), thisNormalTextConfig);
         }
 
         const char *timeFormat = "%.1fs";
@@ -269,7 +296,7 @@ void RenderScenarioCard(int index) {
             } else {
                 metadata->timeOffset = 0.0;
             }
-            CLAY_TEXT(CLAY_DYNSTR(timeBuffer), CLAY_TEXT_CONFIG(normalTextConfig));
+            CLAY_TEXT(CLAY_DYNSTR(timeBuffer), thisNormalTextConfig);
         }
     }
 }
@@ -711,7 +738,8 @@ void renderScenarioSelectScreen(void) {
                             .x = CLAY_ALIGN_X_CENTER,
                         },
                         .padding = { 5, 5, 5, 5 },
-                    }
+                    },
+                    .cornerRadius = CLAY_CORNER_RADIUS(2),
                 };
                 scenarioTabConfig.backgroundColor = (currentScenarioTab == MY_SCENARIOS) ? COLOR_LIGHT_GRAY : COLOR_DARK_GRAY;
                 CLAY(scenarioTabConfig) {

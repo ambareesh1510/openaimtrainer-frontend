@@ -95,6 +95,7 @@ void renderCheckbox(bool *checked) {
             (*checked)
                 ? COLOR_WHITE
                 : (Clay_Color) { 0, 0, 0, 0 }, 0.05,
+        .cornerRadius = CLAY_CORNER_RADIUS(2),
     }) {
         Clay_OnHover(handleClickCheckbox, (intptr_t) checked);
     }
@@ -297,6 +298,7 @@ void renderTextBox(TextBoxData *data) {
         .clip = {
             .horizontal = true,
         },
+        .cornerRadius = CLAY_CORNER_RADIUS(2),
     }) {
         Clay_OnHover(handleClickTextBox, (intptr_t) data);
 
