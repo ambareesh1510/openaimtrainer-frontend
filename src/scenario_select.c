@@ -976,17 +976,43 @@ void renderScenarioSelectScreen(void) {
                     CLAY_TEXT(CLAY_STRING("Start Scenario"), &normalTextConfig);
                 }
 
-                if (authToken != NULL) {
+
+                if (currentScenarioTab == MY_SCENARIOS && authToken != NULL) {
+                    // TODO: abstract this flow (check if request allowed) into a function
+                    //  (it is used in the login screen and online scenario list as well)
+                    bool allowPublishRequest = false;
+
+                    if (!submitScenarioInfo.requestData.dispatched) {
+                        allowPublishRequest = true;
+                    } else {
+                        bool requestFinished;
+                        mtx_lock(&submitScenarioInfo.requestData.mutex);
+                        requestFinished = submitScenarioInfo.requestData.finished;
+                        mtx_unlock(&submitScenarioInfo.requestData.mutex);
+                        if (requestFinished) {
+                            submitScenarioInfo.requestData.dispatched = false;
+                            allowPublishRequest = true;
+                        }
+                    }
+
+                    Clay_TextElementConfig publishButtonConfig = normalTextConfig;
+                    if (!allowPublishRequest) {
+                        publishButtonConfig.textColor = COLOR_LIGHT_GRAY;
+                    }
                     CLAY({
-                        .backgroundColor = Clay_Hovered()
-                            ? COLOR_DARK_BLUE
-                            : COLOR_LIGHT_GRAY,
+                        .backgroundColor = allowPublishRequest
+                            ? (Clay_Hovered()
+                                ? COLOR_DARK_BLUE
+                                : COLOR_LIGHT_GRAY)
+                            : COLOR_DARK_GRAY,
                         .layout = {
                             .padding = { 5, 5, 5, 5 },
                         },
                     }) {
-                        Clay_OnHover(handlePublishScenario, 0);
-                        CLAY_TEXT(CLAY_STRING("Publish Scenario"), &normalTextConfig);
+                        if (allowPublishRequest) {
+                            Clay_OnHover(handlePublishScenario, 0);
+                        }
+                        CLAY_TEXT(CLAY_STRING("Publish Scenario"), CLAY_TEXT_CONFIG(publishButtonConfig));
                     }
                 }
             }

@@ -82,12 +82,12 @@ size_t writeToStrBufCallback(
     if (request->checkThreadId) {
         if (request->threadId == thrd_current()) {
             request->checkThreadId = false;
-            mtx_unlock(&request->mutex);
         } else {
             mtx_unlock(&request->mutex);
             return -1;
         }
     }
+    mtx_unlock(&request->mutex);
 
     size_t total = size * nmemb;
 
