@@ -68,6 +68,7 @@ char *pointsBuffer = NULL;
 char *timerBuffer = NULL;
 char *accuracyBuffer = NULL;
 double countdownToStart = 0.0;
+double countdownToEnd = 0.0;
 char countdown[2] = { 0, 0 };
 Clay_RenderCommandArray scenarioUi(ScenarioMetadata metadata) {
     Clay_BeginLayout();
@@ -318,6 +319,34 @@ Clay_RenderCommandArray scenarioUi(ScenarioMetadata metadata) {
                 }
             }
         }
+    } else if (scenarioState == FINISHED) {
+        CLAY({
+            .layout = {
+                .sizing = {
+                    .width = CLAY_SIZING_GROW(0),
+                    .height = CLAY_SIZING_GROW(0)
+                },
+                .childGap = 16,
+                .childAlignment = {
+                    .x = CLAY_ALIGN_X_CENTER,
+                    .y = CLAY_ALIGN_Y_CENTER,
+                },
+                .layoutDirection = CLAY_TOP_TO_BOTTOM,
+            },
+            .backgroundColor = { 0, 0, 0, MIN(10.0 * (1 - countdownToEnd), 1.0) * 230 },
+        }) {
+            CLAY_TEXT(CLAY_STRING("Scenario complete!"), &hugeTextConfig);
+            Clay_TextElementConfig continueTextConfig = largeTextConfig;
+            if (countdownToEnd > 0.0) {
+                continueTextConfig.textColor = COLOR_BLANK;
+            } else {
+                continueTextConfig.textColor = (Clay_Color) {
+                    255, 255, 255,
+                    MIN((-countdownToEnd / 0.05), 1.0) * 255
+                };
+            }
+            CLAY_TEXT(CLAY_STRING("(Click to continue)"), &continueTextConfig);
+        }
     }
     return Clay_EndLayout();
 }
@@ -487,7 +516,9 @@ void loadLuaScenario(ScenarioMetadata metadata, int selectedDifficulty, char *se
 
             if (elapsedTime >= metadata.time) {
                 valid = true;
-                break;
+                scenarioState = FINISHED;
+                countdownToEnd = 1.0;
+                // break;
             }
             Ray ray = GetScreenToWorldRay(GetMousePosition(), camera);
             ray.position = camera.position;
@@ -547,6 +578,12 @@ void loadLuaScenario(ScenarioMetadata metadata, int selectedDifficulty, char *se
                     }
                 }
     afterCollisionCheck:
+            }
+        }
+        if (scenarioState == FINISHED) {
+            countdownToEnd -= GetFrameTime();
+            if (countdownToEnd < 0.0 && IsMouseButtonPressed(0)) {
+                break;
             }
         }
         float cameraPos[3] = { camera.position.x, camera.position.y, camera.position.z };

@@ -966,10 +966,6 @@ void renderScenarioSelectScreen(void) {
                             .height = CLAY_SIZING_GROW(0),
                         },
                     },
-                    .border = {
-                        .width = { 2, 2, 2, 2 },
-                        .color = COLOR_WHITE,
-                    },
                 }) {
                     CLAY({
                         .layout = {
@@ -978,7 +974,7 @@ void renderScenarioSelectScreen(void) {
                                 .height = CLAY_SIZING_GROW(0),
                             },
                         },
-                        .backgroundColor = COLOR_GRAY,
+                        .backgroundColor = COLOR_LIGHT_GRAY,
                         .custom = {
                             .customData = &scenarioSelectScoreGraphData,
                         },

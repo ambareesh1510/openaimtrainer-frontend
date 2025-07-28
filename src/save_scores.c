@@ -162,9 +162,9 @@ void drawGraph(
     int numSubdivisions = 5;
 
 
-    DrawRectangle(marginX - 15, 0, 2, h - marginY + 10, auxColor);
+    DrawRectangle(marginX - 15, 10, 2, h - marginY, auxColor);
 
-    DrawRectangle(w - (marginX - 15), 0, 2, h - marginY + 10, auxColor);
+    DrawRectangle(w - (marginX - 15), 10, 2, h - marginY, auxColor);
 
     Vector2 scoreLegendSize = MeasureTextEx(font, "Score", fontSize, spacing);
     Vector2 accuracyLegendSize = MeasureTextEx(font, "Accuracy", fontSize, spacing);

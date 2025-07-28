@@ -78,6 +78,7 @@ enum ScenarioState {
     AWAITING_START,
     STARTING,
     STARTED,
+    FINISHED,
 };
 typedef enum ScenarioState ScenarioState;
 
