@@ -67,6 +67,7 @@ void initRequestData(RequestData *data) {
 }
 
 void destroyRequestData(RequestData *data) {
+    data->finished = false;
     mtx_destroy(&data->mutex);
 }
 

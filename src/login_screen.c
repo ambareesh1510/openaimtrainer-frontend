@@ -88,10 +88,38 @@ void renderLoginScreen(void) {
             renderTextBox(&passwordData);
         }
 
+        bool authParamsValid = (strlen(emailData.str) != 0) && (strlen(passwordData.str) != 0);
+        if (currentPageAuthRequestType == AUTH_REQUEST_SIGN_UP) {
+            authParamsValid = authParamsValid && (strlen(usernameData.str) != 0);
+        }
+
+        bool allowAuthRequest = false;
+        if (authParamsValid) {
+            if (!authRequestInfo.requestData.dispatched) {
+                allowAuthRequest = true;
+            } else {
+                bool requestFinished;
+                mtx_lock(&authRequestInfo.requestData.mutex);
+                requestFinished = authRequestInfo.requestData.finished;
+                mtx_unlock(&authRequestInfo.requestData.mutex);
+                if (requestFinished) {
+                    authRequestInfo.requestData.dispatched = false;
+                    allowAuthRequest = true;
+                }
+            }
+        }
+
+        Clay_TextElementConfig submitButtonConfig = hugeTextConfig;
+        if (!allowAuthRequest) {
+            submitButtonConfig.textColor = COLOR_LIGHT_GRAY;
+        }
+
         CLAY({
-            .backgroundColor = Clay_Hovered()
-                ? COLOR_DARK_BLUE
-                : COLOR_LIGHT_GRAY,
+            .backgroundColor = allowAuthRequest
+                ? (Clay_Hovered()
+                    ? COLOR_DARK_BLUE
+                    : COLOR_LIGHT_GRAY)
+                : COLOR_DARK_GRAY,
             .layout = {
                 .padding = { 5, 5, 5, 5 },
                 .sizing = {
@@ -102,8 +130,10 @@ void renderLoginScreen(void) {
                 },
             },
         }) {
-            Clay_OnHover(handleSubmitAuthRequest, 0);
-            CLAY_TEXT(CLAY_STRING("Submit"), &hugeTextConfig);
+            if (allowAuthRequest) {
+                Clay_OnHover(handleSubmitAuthRequest, 0);
+            }
+            CLAY_TEXT(CLAY_STRING("Submit"), CLAY_TEXT_CONFIG(submitButtonConfig));
         }
 
         if (currentPageAuthRequestType == AUTH_REQUEST_LOG_IN) {

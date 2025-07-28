@@ -59,7 +59,7 @@ void renderStatusBar(void) {
                     .width = CLAY_SIZING_FIT(0),
                 },
                 .padding = { 15, 15, 10, 10 },
-                .childGap = 5,
+                .childGap = 2,
             },
         }) {
             if (username != NULL) {
