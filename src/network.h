@@ -20,6 +20,8 @@ struct RequestData {
     StrBuf response;
     bool dispatched;
     bool finished;
+    thrd_t threadId;
+    bool checkThreadId;
 };
 typedef struct RequestData RequestData;
 
@@ -35,8 +37,6 @@ void extractAuthDetails(StrBuf response, char **tokenBuf, char **usernameBuf);
 // Sign up (/signup)
 // =================
 
-// Only writes to `inProgress` and `finished` are read concurrently
-// and need to be locked.
 enum AuthRequestType {
     AUTH_REQUEST_SIGN_UP,
     AUTH_REQUEST_LOG_IN,

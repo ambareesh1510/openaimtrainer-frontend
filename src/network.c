@@ -77,8 +77,21 @@ size_t writeToStrBufCallback(
     size_t nmemb,
     void *userdata
 ) {
+    RequestData *request = (RequestData *) userdata;
+    mtx_lock(&request->mutex);
+    if (request->checkThreadId) {
+        if (request->threadId == thrd_current()) {
+            request->checkThreadId = false;
+            mtx_unlock(&request->mutex);
+        } else {
+            mtx_unlock(&request->mutex);
+            return -1;
+        }
+    }
+
     size_t total = size * nmemb;
-    StrBuf *data = (StrBuf *) userdata;
+
+    StrBuf *data = &request->response;
 
     char *newData = realloc(data->buf, data->len + total + 1);
     if (!newData) {
@@ -151,7 +164,7 @@ int sendAuthRequestThread(void *arg) {
         fprintf(stderr, "ERROR: UNKNOWN AUTH REQUEST TYPE\n");
     }
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeToStrBufCallback);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &info->requestData.response);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &info->requestData);
     curl_easy_setopt(curl, CURLOPT_MIMEPOST, mime);
 
     mtx_lock(&info->requestData.mutex);
@@ -255,7 +268,7 @@ int submitScenarioThread(void *arg) {
 
     curl_easy_setopt(curl, CURLOPT_URL, API_URL "/createScenario");
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeToStrBufCallback);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &info->requestData.response);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &info->requestData);
     curl_easy_setopt(curl, CURLOPT_MIMEPOST, mime);
 
     mtx_lock(&info->requestData.mutex);
@@ -320,7 +333,7 @@ int sendFindScenariosRequestThread(void *arg) {
 
     curl_easy_setopt(curl, CURLOPT_URL, API_URL "/findScenarios");
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeToStrBufCallback);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &info->requestData.response);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &info->requestData);
     curl_easy_setopt(curl, CURLOPT_MIMEPOST, mime);
 
     mtx_lock(&info->requestData.mutex);
@@ -329,26 +342,38 @@ int sendFindScenariosRequestThread(void *arg) {
 
     CURLcode res = curl_easy_perform(curl);
     // TODO: set return value properly here
-    if (res != CURLE_OK) {
+    // TODO: checking res == CURLE_WRITE_ERROR seems like a messy solution
+    if (res == CURLE_WRITE_ERROR) {
+        goto bailUnfinished;
+    } else if (res != CURLE_OK) {
         goto bail;
     }
 
 bail:
-    curl_easy_cleanup(curl);
     mtx_lock(&info->requestData.mutex);
     info->requestData.finished = true;
     mtx_unlock(&info->requestData.mutex);
+bailUnfinished:
+    curl_easy_cleanup(curl);
     printf("/findScenarios: %s\n", info->requestData.response.buf);
     return 0;
 }
 
 int sendFindScenariosRequest(FindScenariosInfo *info) {
-    thrd_t threadId;
-    int res = thrd_create(&threadId, sendFindScenariosRequestThread, info);
+    mtx_lock(&info->requestData.mutex);
+    info->requestData.checkThreadId = true;
+    int res = thrd_create(
+        &info->requestData.threadId,
+        sendFindScenariosRequestThread,
+        info
+    );
     if (res != thrd_success) {
+        info->requestData.checkThreadId = false;
+        mtx_unlock(&info->requestData.mutex);
         return -1;
     }
-    thrd_detach(threadId);
+    mtx_unlock(&info->requestData.mutex);
+    thrd_detach(info->requestData.threadId);
     info->requestData.dispatched = true;
     return 0;
 }
