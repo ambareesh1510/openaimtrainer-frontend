@@ -432,9 +432,6 @@ void loadLuaScenario(ScenarioMetadata metadata, int selectedDifficulty, char *se
         goto cleanup;
     }
 
-    crosshairTexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
-    drawCrosshair(crosshairTexture, BLANK);
-
     // TODO: handle WindowShouldClose() separately (currently only exits
     // the scenario)
     while (!(WindowShouldClose() || IsKeyPressed(KEY_ESCAPE))) {
@@ -681,7 +678,8 @@ void loadLuaScenario(ScenarioMetadata metadata, int selectedDifficulty, char *se
             EndMode3D();
 
             if (scenarioState == STARTING || scenarioState == STARTED) {
-                DrawTexture(crosshairTexture.texture, 0, 0, WHITE);
+                // DrawTexture(crosshairTexture.texture, 0, 0, WHITE);
+                drawCrosshair(0, 0, GetScreenWidth(), GetScreenHeight(), BLANK);
             }
 
             Clay_RenderCommandArray hud = scenarioUi(metadata);

@@ -47,7 +47,14 @@ extern CrosshairConfig currentCrosshairConfig;
 extern float maxSavedScores;
 #define DEFAULT_MAX_SAVED_SCORES 20.0f
 
-void drawCrosshair(RenderTexture2D texture, Color clearColor);
+// void drawCrosshair(RenderTexture2D texture, Color clearColor);
+void drawCrosshair(
+    int bboxX,
+    int bboxY,
+    int bboxW,
+    int bboxH,
+    Color clearColor
+);
 
 #define SETTINGS_MAGIC "MAGIC12345"
 

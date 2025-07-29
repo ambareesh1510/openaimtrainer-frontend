@@ -6,17 +6,21 @@ float sensitivity = DEFAULT_SENSITIVITY;
 CrosshairConfig currentCrosshairConfig = DEFAULT_CROSSHAIR_CONFIG;
 float maxSavedScores = DEFAULT_MAX_SAVED_SCORES;
 
-void drawCrosshair(RenderTexture2D texture, Color clearColor) {
-    BeginTextureMode(texture);
-
-    int cw = texture.texture.width / 2;
-    int ch = texture.texture.height / 2;
+void drawCrosshair(
+    int bboxX,
+    int bboxY,
+    int bboxW,
+    int bboxH,
+    Color clearColor
+) {
+    int cw = bboxX + bboxW / 2;
+    int ch = bboxY + bboxH / 2;
 
     DrawRectangle(
-        0,
-        0,
-        texture.texture.width,
-        texture.texture.height,
+        bboxX,
+        bboxY,
+        bboxW,
+        bboxH,
         clearColor 
     );
 
@@ -91,8 +95,6 @@ void drawCrosshair(RenderTexture2D texture, Color clearColor) {
             WHITE
         );
     }
-
-    EndTextureMode();
 }
 
 int loadSettings(char *path) {

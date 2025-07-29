@@ -3,9 +3,6 @@
 #include "save_scores.h"
 #include "shader.h"
 
-RenderTexture2D settingsCrosshairTexture = { 0 };
-bool settingsCrosshairTextureInitialized = false;
-
 cvector_vector_type(Clay_ScissorData) scissorDataStack = NULL;
 
 Clay_ScissorData clipScissorData(Clay_ScissorData outer, Clay_ScissorData inner) {
@@ -219,24 +216,13 @@ void Clay_Raylib_Render(Clay_RenderCommandArray renderCommands, Font* fonts)
                 Clay_CustomRenderData *config = &renderCommand->renderData.custom;
                 CustomLayoutElementData *customData = config->customData;
                 if (customData->type == DRAW_CROSSHAIR_TEXTURE) {
-                    // TODO: this will break on resize
-                    if (!settingsCrosshairTextureInitialized) {
-                        settingsCrosshairTexture = LoadRenderTexture(
-                            boundingBox.width,
-                            boundingBox.height
-                        );
-                        settingsCrosshairTextureInitialized = true;
-                    }
 
                     drawCrosshair(
-                        settingsCrosshairTexture,
-                        CLAY_COLOR_TO_RAYLIB_COLOR(config->backgroundColor)
-                    );
-                    DrawTexture(
-                        settingsCrosshairTexture.texture,
                         boundingBox.x,
                         boundingBox.y,
-                        WHITE
+                        boundingBox.width,
+                        boundingBox.height,
+                        CLAY_COLOR_TO_RAYLIB_COLOR(config->backgroundColor)
                     );
                 } else if (
                     customData->type == DRAW_PROGRESSION_GRAPH

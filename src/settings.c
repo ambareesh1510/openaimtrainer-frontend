@@ -18,7 +18,7 @@ void handleExitSettingsMenu(Clay_ElementId elementId, Clay_PointerData pointerIn
             fprintf(stderr, "Failed to load settings file upon exiting settings menu\n");
             currentCrosshairConfig = (CrosshairConfig) DEFAULT_CROSSHAIR_CONFIG;
         }
-        uiState = MAIN_MENU;
+        uiState = SCENARIO_SELECT;
     }
 }
 
