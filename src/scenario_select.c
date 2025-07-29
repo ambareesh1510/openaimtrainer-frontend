@@ -76,6 +76,72 @@ cvector_vector_type(ScenarioMetadata) *currentFileMetadata = &myFileMetadata;
 FindScenariosInfo findScenariosInfo;
 bool findScenariosInProgress = false;
 
+int recursiveDeletePath(const char *path) {
+    int res;
+    if (DirectoryExists(path)) {
+        FilePathList files = LoadDirectoryFiles(path);
+        for (size_t i = 0; i < files.count; i++) {
+            recursiveDeletePath(files.paths[i]);
+        }
+        res = remove(path);
+    } else if (FileExists(path)) {
+        res = remove(path);
+    }
+    return res;
+}
+
+bool deleteScoresConfirmation = false;
+bool deleteScenarioConfirmation = false;
+
+void handleDeleteScores(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        bool progress = (bool) userData;
+        if (progress) {
+            if (deleteScoresConfirmation) {
+                const char *toDelete = TextFormat(
+                    "%s/scores",
+                    GetDirectoryPath(
+                        (*currentFileMetadata)[selectedScenarioIndex].path
+                    )
+                );
+                int res = recursiveDeletePath(toDelete);
+                loadSavedScores((*currentFileMetadata)[selectedScenarioIndex]);
+                deleteScoresConfirmation = false;
+            } else {
+                deleteScenarioConfirmation = false;
+                deleteScoresConfirmation = true;
+            }
+        } else {
+            deleteScoresConfirmation = false;
+        }
+    }
+}
+
+void handleDeleteScenario(Clay_ElementId elementId, Clay_PointerData pointerInfo, intptr_t userData) {
+    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+        bool progress = (bool) userData;
+        if (progress) {
+            if (deleteScenarioConfirmation) {
+                const char *toDelete = TextFormat(
+                    "%s",
+                    GetDirectoryPath(
+                        (*currentFileMetadata)[selectedScenarioIndex].path
+                    )
+                );
+                int res = recursiveDeletePath(toDelete);
+                findScenarios();
+                selectedScenarioIndex = -1;
+                deleteScenarioConfirmation = false;
+            } else {
+                deleteScoresConfirmation = false;
+                deleteScenarioConfirmation = true;
+            }
+        } else {
+            deleteScenarioConfirmation = false;
+        }
+    }
+}
+
 int compareFuzzyScore(const void *a, const void *b) {
     ScenarioMetadata *metadataA = (ScenarioMetadata *) a;
     ScenarioMetadata *metadataB = (ScenarioMetadata *) b;
@@ -404,8 +470,8 @@ void findScenarios() {
     } else {
         searchDir = DOWNLOADED_SCENARIOS_PATH;
     }
+    cvector_reserve(*currentFileMetadata, 1);
     if (!DirectoryExists(searchDir)) {
-        cvector_reserve(*currentFileMetadata, 1);
         return;
     }
     FilePathList dir = LoadDirectoryFiles(searchDir);
@@ -988,57 +1054,241 @@ void renderScenarioSelectScreen(void) {
                         },
                     },
                 }) {}
+
                 CLAY({
-                    .backgroundColor = Clay_Hovered()
-                        ? COLOR_DARK_BLUE
-                        : COLOR_LIGHT_GRAY,
                     .layout = {
-                        .padding = { 5, 5, 5, 5 },
+                        .sizing = {
+                            .width = CLAY_SIZING_PERCENT(1.0),
+                            .height = CLAY_SIZING_FIT(0)
+                        },
+                        .childGap = 5,
                     },
                 }) {
-                    Clay_OnHover(handleStartScenario, 0);
-                    CLAY_TEXT(CLAY_STRING("Start Scenario"), &normalTextConfig);
-                }
-
-
-                if (currentScenarioTab == MY_SCENARIOS && authToken != NULL) {
-                    // TODO: abstract this flow (check if request allowed) into a function
-                    //  (it is used in the login screen and online scenario list as well)
-                    bool allowPublishRequest = false;
-
-                    if (!submitScenarioInfo.requestData.dispatched) {
-                        allowPublishRequest = true;
-                    } else {
-                        bool requestFinished;
-                        mtx_lock(&submitScenarioInfo.requestData.mutex);
-                        requestFinished = submitScenarioInfo.requestData.finished;
-                        mtx_unlock(&submitScenarioInfo.requestData.mutex);
-                        if (requestFinished) {
-                            submitScenarioInfo.requestData.dispatched = false;
-                            allowPublishRequest = true;
-                        }
-                    }
-
-                    Clay_TextElementConfig publishButtonConfig = normalTextConfig;
-                    if (!allowPublishRequest) {
-                        publishButtonConfig.textColor = COLOR_LIGHT_GRAY;
-                    }
                     CLAY({
-                        .backgroundColor = allowPublishRequest
-                            ? (Clay_Hovered()
-                                ? COLOR_DARK_BLUE
-                                : COLOR_LIGHT_GRAY)
-                            : COLOR_DARK_GRAY,
+                        .backgroundColor = Clay_Hovered()
+                            ? COLOR_DARK_BLUE
+                            : COLOR_LIGHT_GRAY,
                         .layout = {
                             .padding = { 5, 5, 5, 5 },
                         },
                     }) {
-                        if (allowPublishRequest) {
-                            Clay_OnHover(handlePublishScenario, 0);
+                        Clay_OnHover(handleStartScenario, 0);
+                        CLAY_TEXT(CLAY_STRING("Start Scenario"), &normalTextConfig);
+                    }
+                    if (currentScenarioTab == MY_SCENARIOS && authToken != NULL) {
+                        // TODO: abstract this flow (check if request allowed) into a function
+                        //  (it is used in the login screen and online scenario list as well)
+                        bool allowPublishRequest = false;
+
+                        if (!submitScenarioInfo.requestData.dispatched) {
+                            allowPublishRequest = true;
+                        } else {
+                            bool requestFinished;
+                            mtx_lock(&submitScenarioInfo.requestData.mutex);
+                            requestFinished = submitScenarioInfo.requestData.finished;
+                            mtx_unlock(&submitScenarioInfo.requestData.mutex);
+                            if (requestFinished) {
+                                submitScenarioInfo.requestData.dispatched = false;
+                                allowPublishRequest = true;
+                            }
                         }
-                        CLAY_TEXT(CLAY_STRING("Publish Scenario"), CLAY_TEXT_CONFIG(publishButtonConfig));
+
+                        Clay_TextElementConfig publishButtonConfig = normalTextConfig;
+                        if (!allowPublishRequest) {
+                            publishButtonConfig.textColor = COLOR_LIGHT_GRAY;
+                        }
+                        CLAY({
+                            .backgroundColor = allowPublishRequest
+                                ? (Clay_Hovered()
+                                    ? COLOR_DARK_BLUE
+                                    : COLOR_LIGHT_GRAY)
+                                : COLOR_DARK_GRAY,
+                            .layout = {
+                                .padding = { 5, 5, 5, 5 },
+                            },
+                        }) {
+                            if (allowPublishRequest) {
+                                Clay_OnHover(handlePublishScenario, 0);
+                            }
+                            CLAY_TEXT(CLAY_STRING("Publish Scenario"), CLAY_TEXT_CONFIG(publishButtonConfig));
+                        }
+                    }
+
+                    hSpacer();
+
+                    CLAY({
+                        .backgroundColor =
+                            (Clay_Hovered()
+                            || deleteScoresConfirmation)
+                                ? COLOR_DARK_RED
+                                : COLOR_LIGHT_GRAY,
+                        .layout = {
+                            .padding = { 5, 5, 5, 5 },
+                        },
+                    }) {
+                        if (!deleteScoresConfirmation) {
+                            Clay_OnHover(handleDeleteScores, (intptr_t) true);
+                        }
+                        CLAY_TEXT(
+                            CLAY_STRING("Delete all scores"),
+                            &normalTextConfig
+                        );
+
+                        if (deleteScoresConfirmation) {
+                            CLAY({
+                                .floating = {
+                                    .attachTo = CLAY_ATTACH_TO_PARENT,
+                                    .attachPoints = {
+                                        .element = CLAY_ATTACH_POINT_RIGHT_BOTTOM,
+                                        .parent = CLAY_ATTACH_POINT_RIGHT_TOP,
+                                    },
+                                    .offset = { 0, -10 },
+                                },
+                                .backgroundColor = COLOR_DARK_RED,
+                                .layout = {
+                                    .padding = { 5, 5, 5, 5 },
+                                    .layoutDirection = CLAY_TOP_TO_BOTTOM,
+                                    .childGap = 10,
+                                },
+                            }) {
+                                CLAY_TEXT(
+                                    CLAY_STRING("Are you sure? This will delete all saved scores.\nThis action is irreversible."),
+                                    &normalTextConfig
+                                );
+
+                                CLAY({
+                                    .layout = {
+                                        .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                                        .childGap = 16,
+                                    },
+                                }) {
+                                    CLAY({
+                                        .backgroundColor = Clay_Hovered()
+                                            ? COLOR_LIGHT_GRAY
+                                            : COLOR_DARK_GRAY,
+                                        .layout = {
+                                            .padding = { 5, 5, 5, 5 },
+                                        },
+                                    }) {
+                                        Clay_OnHover(
+                                            handleDeleteScores,
+                                            (intptr_t) true
+                                        );
+                                        CLAY_TEXT(
+                                            CLAY_STRING("Yes"),
+                                            &normalTextConfig
+                                        );
+                                    }
+
+                                    CLAY({
+                                        .backgroundColor = Clay_Hovered()
+                                            ? COLOR_LIGHT_GRAY
+                                            : COLOR_DARK_GRAY,
+                                        .layout = {
+                                            .padding = { 5, 5, 5, 5 },
+                                        },
+                                    }) {
+                                        Clay_OnHover(
+                                            handleDeleteScores,
+                                            (intptr_t) false
+                                        );
+                                        CLAY_TEXT(
+                                            CLAY_STRING("No"),
+                                            &normalTextConfig
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (currentScenarioTab == DOWNLOADED_SCENARIOS) {
+                        CLAY({
+                            .backgroundColor = (Clay_Hovered() || deleteScenarioConfirmation)
+                                ? COLOR_DARK_RED
+                                : COLOR_LIGHT_GRAY,
+                            .layout = {
+                                .padding = { 5, 5, 5, 5 },
+                            },
+                        }) {
+                            if (!deleteScenarioConfirmation) {
+                                Clay_OnHover(handleDeleteScenario, (intptr_t) true);
+                            }
+                            CLAY_TEXT(
+                                CLAY_STRING("Delete scenario"),
+                                &normalTextConfig
+                            );
+
+                            if (deleteScenarioConfirmation) {
+                                CLAY({
+                                    .floating = {
+                                        .attachTo = CLAY_ATTACH_TO_PARENT,
+                                        .attachPoints = {
+                                            .element = CLAY_ATTACH_POINT_RIGHT_BOTTOM,
+                                            .parent = CLAY_ATTACH_POINT_RIGHT_TOP,
+                                        },
+                                        .offset = { 0, -10 },
+                                    },
+                                    .backgroundColor = COLOR_DARK_RED,
+                                    .layout = {
+                                        .padding = { 5, 5, 5, 5 },
+                                        .layoutDirection = CLAY_TOP_TO_BOTTOM,
+                                        .childGap = 10,
+                                    },
+                                }) {
+                                    CLAY_TEXT(
+                                        CLAY_STRING("Are you sure? This will delete the scenario as well as all saved scores.\nThis action is irreversible."),
+                                        &normalTextConfig
+                                    );
+
+                                    CLAY({
+                                        .layout = {
+                                            .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                                            .childGap = 16,
+                                        },
+                                    }) {
+                                        CLAY({
+                                            .backgroundColor = Clay_Hovered()
+                                                ? COLOR_LIGHT_GRAY
+                                                : COLOR_DARK_GRAY,
+                                            .layout = {
+                                                .padding = { 5, 5, 5, 5 },
+                                            },
+                                        }) {
+                                            Clay_OnHover(
+                                                handleDeleteScenario,
+                                                (intptr_t) true
+                                            );
+                                            CLAY_TEXT(
+                                                CLAY_STRING("Yes"),
+                                                &normalTextConfig
+                                            );
+                                        }
+
+                                        CLAY({
+                                            .backgroundColor = Clay_Hovered()
+                                                ? COLOR_LIGHT_GRAY
+                                                : COLOR_DARK_GRAY,
+                                            .layout = {
+                                                .padding = { 5, 5, 5, 5 },
+                                            },
+                                        }) {
+                                            Clay_OnHover(
+                                                handleDeleteScenario,
+                                                (intptr_t) false
+                                            );
+                                            CLAY_TEXT(
+                                                CLAY_STRING("No"),
+                                                &normalTextConfig
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
+
             }
         }
 

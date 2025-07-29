@@ -60,6 +60,7 @@ typedef struct ScenarioMetadata ScenarioMetadata;
 #define COLOR_LIGHT_GRAY (Clay_Color) {50, 50, 50, 255}
 #define COLOR_DARK_BLUE (Clay_Color) {50, 50, 80, 255}
 #define COLOR_DARK_GREEN (Clay_Color) {50, 80, 50, 255}
+#define COLOR_DARK_RED (Clay_Color) {80, 50, 50, 255}
 #define COLOR_WHITE (Clay_Color) {255, 255, 255, 255}
 #define COLOR_OFF_WHITE (Clay_Color) {255, 255, 255, 185}
 #define COLOR_ORANGE (Clay_Color) {225, 138, 50, 255}
