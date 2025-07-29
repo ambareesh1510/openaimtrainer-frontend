@@ -2,6 +2,7 @@
 #include "clay_renderer_raylib.h"
 #include "save_scores.h"
 #include "audio.h"
+#include "model.h"
 
 Slotmap targetMap = { 0 };
 
@@ -535,6 +536,7 @@ void loadLuaScenario(ScenarioMetadata metadata, int selectedDifficulty, char *se
                 ? IsMouseButtonDown(MOUSE_BUTTON_LEFT)
                 : IsMouseButtonPressed(MOUSE_BUTTON_LEFT));
             if (canShoot) {
+                gunRecoilIncreasing = true;
                 PlaySound(soundArray[currentSound]);
                 currentSound = (currentSound + 1) % MAX_SOUNDS;
 
@@ -622,6 +624,59 @@ void loadLuaScenario(ScenarioMetadata metadata, int selectedDifficulty, char *se
                     }
                 }
 
+            float gunRecoilIncreaseFactor = 20.0f;
+            float gunRecoilDecreaseFactor = 10.0f;
+            if (gunRecoilIncreasing) {
+                gunRecoilCorrection =
+                    gunRecoilCorrection
+                    + GUN_RECOIL_MAX
+                        * gunRecoilIncreaseFactor
+                        * GetFrameTime();
+                if (gunRecoilCorrection >= GUN_RECOIL_MAX) {
+                    gunRecoilCorrection = GUN_RECOIL_MAX;
+                    gunRecoilIncreasing = false;
+                }
+            } else {
+                gunRecoilCorrection = MAX(
+                    gunRecoilCorrection
+                        - GUN_RECOIL_MAX
+                            * gunRecoilDecreaseFactor
+                            * GetFrameTime(),
+                    0.0f
+                );
+            }
+
+            Vector3 viewDir = Vector3Subtract(camera.target, camera.position);
+            Vector3 viewDirXZ = Vector3Normalize(viewDir);
+            viewDirXZ.y = 0;
+
+            Vector3 modelPos = Vector3Add(camera.position, Vector3Normalize(viewDir));
+            modelPos = Vector3Subtract(
+                modelPos,
+                Vector3Scale(viewDirXZ, gunRecoilCorrection * 1.5)
+            );
+            // TODO: add setting for left/right handed
+            modelPos = Vector3Add(modelPos, Vector3RotateByAxisAngle(viewDirXZ, (Vector3) { 0, 1, 0 }, -PI / 4));
+            modelPos.y -= 0.5;
+
+            Vector3 gunDir = Vector3Normalize(Vector3Subtract(camera.target, modelPos));
+
+            Vector3 gunDirXZ = gunDir;
+            gunDirXZ.y = 0;
+            float rotationY = Vector3Angle(gunDirXZ, (Vector3) { 0, 0, 1 });
+            if (gunDirXZ.x < 0) {
+                rotationY = PI - rotationY;
+            } else {
+                rotationY = PI + rotationY;
+            }
+
+            float rotationZ = Vector3Angle(gunDir, (Vector3) gunDirXZ);
+            if (gunDir.y < 0) {
+                rotationZ = 2 * PI - rotationZ;
+            }
+            rotationZ += gunRecoilCorrection;
+            gunModel.transform = MatrixRotateXYZ((Vector3){ rotationZ, rotationY, 0 });
+            DrawModel(gunModel, modelPos, 0.3f, WHITE);
             EndShaderMode();
             EndMode3D();
 

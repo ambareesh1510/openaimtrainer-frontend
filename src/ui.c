@@ -11,6 +11,7 @@
 #include "status_bar.h"
 #include "lua_interface.h"
 #include "save_scores.h"
+#include "model.h"
 
 typedef struct
 {
@@ -144,6 +145,7 @@ int spawnUi(void) {
     );
 
     initFonts();
+    initModels();
 
     // TODO: this should really only happen when switching to scenario select
     findScenarios();
