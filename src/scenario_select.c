@@ -863,38 +863,38 @@ void renderScenarioSelectScreen(void) {
                 } else {
                     shouldRender = true;
                 }
-                if (shouldRender) {
-                    CLAY({
-                        .layout = {
-                            .sizing = {
-                                .width = CLAY_SIZING_GROW(0),
-                                .height = CLAY_SIZING_GROW(0),
-                            },
-                            .childGap = 8,
-                            .layoutDirection = CLAY_TOP_TO_BOTTOM,
+                CLAY({
+                    .layout = {
+                        .sizing = {
+                            .width = CLAY_SIZING_GROW(0),
+                            .height = CLAY_SIZING_GROW(0),
                         },
-                    }) {
+                        .childGap = 8,
+                        .childAlignment = {
+                            .x = CLAY_ALIGN_X_CENTER,
+                        },
+                        .layoutDirection = CLAY_TOP_TO_BOTTOM,
+                    },
+                }) {
+                    if (shouldRender) {
                         mtx_lock(&onlineFileExtraMetadataMutex);
-                        for (
-                            size_t i = 0;
-                            i < cvector_size(*currentFileMetadata);
-                            i++
-                        ) {
-                            RenderScenarioCard(i);
+                        int bound = cvector_size(*currentFileMetadata);
+                        if (bound == 0) {
+                            CLAY_TEXT(
+                                CLAY_STRING("No scenarios found"),
+                                &largeTextConfig
+                            );
+                        } else {
+                            for (
+                                size_t i = 0;
+                                i < cvector_size(*currentFileMetadata);
+                                i++
+                            ) {
+                                RenderScenarioCard(i);
+                            }
                         }
                         mtx_unlock(&onlineFileExtraMetadataMutex);
-                    }
-                } else {
-                    CLAY({
-                        .layout = {
-                            .sizing = {
-                                .width = CLAY_SIZING_GROW(0),
-                            },
-                            .childAlignment = {
-                                .x = CLAY_ALIGN_X_CENTER,
-                            },
-                        },
-                    }) {
+                    } else {
                         CLAY_TEXT(
                             CLAY_STRING("Loading..."),
                             &largeTextConfig
