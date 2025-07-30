@@ -622,7 +622,7 @@ void loadLuaScenario(ScenarioMetadata metadata, int selectedDifficulty, char *se
                 }
 
             float gunRecoilIncreaseFactor = 20.0f;
-            float gunRecoilDecreaseFactor = 10.0f;
+            float gunRecoilDecreaseFactor = 20.0f;
             if (gunRecoilIncreasing) {
                 gunRecoilCorrection =
                     gunRecoilCorrection
@@ -650,7 +650,7 @@ void loadLuaScenario(ScenarioMetadata metadata, int selectedDifficulty, char *se
             Vector3 modelPos = Vector3Add(camera.position, Vector3Normalize(viewDir));
             modelPos = Vector3Subtract(
                 modelPos,
-                Vector3Scale(viewDirXZ, gunRecoilCorrection * 1.5)
+                Vector3Scale(viewDirXZ, gunRecoilCorrection * 4.5)
             );
             // TODO: add setting for left/right handed
             modelPos = Vector3Add(modelPos, Vector3RotateByAxisAngle(viewDirXZ, (Vector3) { 0, 1, 0 }, -PI / 4));

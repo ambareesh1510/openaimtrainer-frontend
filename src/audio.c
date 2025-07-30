@@ -9,7 +9,7 @@ int currentSound;
 void initAudio() {
     InitAudioDevice();
 
-    soundArray[0] = LoadSound(ASSETS_DIR "/shot2.ogg");
+    soundArray[0] = LoadSound(ASSETS_DIR "/shot.ogg");
     for (int i = 1; i < MAX_SOUNDS; i++) {
         soundArray[i] = LoadSoundAlias(soundArray[0]);
     }
