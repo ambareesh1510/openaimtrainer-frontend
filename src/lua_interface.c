@@ -680,18 +680,20 @@ void loadLuaScenario(ScenarioMetadata metadata, int selectedDifficulty, char *se
                 rotationY = PI + rotationY;
             }
 
-            float rotationZ = Vector3Angle(gunDir, (Vector3) gunDirXZ);
-            if (gunDir.y < 0) {
-                rotationZ = 2 * PI - rotationZ;
-            }
-            rotationZ += gunRecoilCorrection;
-            gunModel.transform = MatrixRotateXYZ((Vector3){ rotationZ, rotationY, 0 });
+            float rotationZ = asinf(Vector3Normalize(gunDir).y) + gunRecoilCorrection;
+
+            Quaternion qYaw   = QuaternionFromAxisAngle((Vector3){0,1,0}, rotationY);
+            Quaternion qPitch = QuaternionFromAxisAngle((Vector3){1,0,0}, rotationZ);
+            Quaternion q      = QuaternionMultiply(qYaw, qPitch);
+
+            gunModel.transform = QuaternionToMatrix(q);
+
             DrawModel(gunModel, modelPos, 0.3f, WHITE);
+
             EndShaderMode();
             EndMode3D();
 
             if (scenarioState == STARTING || scenarioState == STARTED) {
-                // DrawTexture(crosshairTexture.texture, 0, 0, WHITE);
                 drawCrosshair(0, 0, GetScreenWidth(), GetScreenHeight(), BLANK);
             }
 
