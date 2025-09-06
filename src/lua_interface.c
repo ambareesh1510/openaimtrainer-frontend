@@ -24,6 +24,19 @@ ScenarioState scenarioState = AWAITING_START;
 
 cvector_vector_type(ScenarioUserInfo) scenarioUserInfoList = NULL;
 
+void sandboxLua(lua_State *L) {
+    luaL_requiref(L, "_G", luaopen_base, 1);
+    luaL_requiref(L, "math", luaopen_math, 1);
+    luaL_requiref(L, "table", luaopen_table, 1);
+    luaL_requiref(L, "string", luaopen_string, 1);
+    lua_pop(L, 4);
+
+    lua_pushnil(L); lua_setglobal(L, "dofile");
+    lua_pushnil(L); lua_setglobal(L, "loadfile");
+    lua_pushnil(L); lua_setglobal(L, "require");
+    lua_pushnil(L); lua_setglobal(L, "load");
+}
+
 void initLua(lua_State *L) {
     lua_register(L, "addSphere", v1_0_addSphere);
 
@@ -397,7 +410,7 @@ void loadLuaScenario(ScenarioMetadata metadata, int selectedDifficulty, char *se
     cvector_push_back(scoreSamples, ((ScoreSample) { .score = 0, .accuracy = 100.0f }));
 
     lua_State *L = luaL_newstate();
-    luaL_openlibs(L);
+    sandboxLua(L);
 
     initLua(L);
 
