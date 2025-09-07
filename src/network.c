@@ -422,11 +422,13 @@ int downloadScenarioThread(void *arg) {
     const char *destInfo = TextFormat("%s/info.toml", dirPath);
     const char *destScript = TextFormat("%s/script.lua", dirPath);
 
+    fprintf(stderr, "Starting download %s\n", urlInfo);
     if (downloadFile(urlInfo, destInfo) != 0) {
         fprintf(stderr, "Failed to download %s\n", urlInfo);
         return -1;
     }
 
+    fprintf(stderr, "Starting download %s\n", urlScript);
     if (downloadFile(urlScript, destScript) != 0) {
         fprintf(stderr, "Failed to download %s\n", urlScript);
         return -1;
@@ -438,13 +440,6 @@ int downloadScenarioThread(void *arg) {
 }
 
 int downloadScenario(const char *uuid) {
-    printf("Got download req\n");
-    if (DirectoryExists(
-        TextFormat(DOWNLOADED_SCENARIOS_PATH "/%s", uuid)
-    )) {
-        return 0;
-    }
-    printf("Staring down req\n");
     thrd_t threadId;
     int res = thrd_create(&threadId, downloadScenarioThread, (void *) uuid);
     if (res != thrd_success) {

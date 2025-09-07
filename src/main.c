@@ -4,8 +4,10 @@
 #include "network.h"
 #include "scenario_select.h"
 #include "audio.h"
+#include "config.h"
 
 int main(void) {
+    initDirs();
     initCurl();
     initOnlineFileExtraMetadataMutex();
     initAudio();

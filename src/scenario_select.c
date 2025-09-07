@@ -63,7 +63,7 @@ void updateDownloadedInfo() {
     mtx_lock(&onlineFileExtraMetadataMutex);
     for (size_t i = 0; i < cvector_size(onlineFileUuids); i++) {
         if (DirectoryExists(
-            TextFormat(DOWNLOADED_SCENARIOS_PATH "/%s", onlineFileUuids[i].uuid)
+            TextFormat("%s/%s", DOWNLOADED_SCENARIOS_PATH,onlineFileUuids[i].uuid)
         )) {
             onlineFileUuids[i].downloaded = SCENARIO_DOWNLOADED;
         }
@@ -733,7 +733,7 @@ int parseFindScenariosResponse() {
             .downloading = false,
         };
         if (DirectoryExists(
-            TextFormat(DOWNLOADED_SCENARIOS_PATH "/%s", extraMetadata.uuid)
+            TextFormat("%s/%s", DOWNLOADED_SCENARIOS_PATH, extraMetadata.uuid)
         )) {
             extraMetadata.downloaded = SCENARIO_DOWNLOADED;
         }
