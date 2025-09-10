@@ -6,7 +6,7 @@
 
 #define ASSETS_DIR "assets"
 
-#define SERVER_BASE_URL "http://localhost"
+#define SERVER_BASE_URL "https://oats.wtf"
 #define API_URL SERVER_BASE_URL "/api"
 
 extern char *MY_SCENARIOS_PATH;
